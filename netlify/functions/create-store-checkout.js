@@ -13,13 +13,22 @@ export default async function (request) {
       storeSnap = await firestore.doc(`stores/${storeId}`).get();
     if (!storeSnap.exists || !storeSnap.data().published)
       return json(404, { error: "Loja não encontrada." });
+    if (!process.env.STRIPE_SECRET_KEY)
+      return json(503, { error: "Pagamentos Stripe não configurados." });
     const store = storeSnap.data(),
-      accountId = store.payment?.stripeAccountId;
+      stripeKey = process.env.STRIPE_SECRET_KEY.trim(),
+      stripeMode = stripeKey.startsWith("sk_test_") ? "test" : "live",
+      payment = store.payment || {},
+      accountId =
+        payment.stripeAccountIds?.[stripeMode] ||
+        (payment.stripeMode === stripeMode || !payment.stripeMode
+          ? payment.stripeAccountId
+          : null);
     if (!accountId)
       return json(409, {
         error: "Esta loja ainda não ativou cartão e carteira digital.",
       });
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY),
+    const stripe = new Stripe(stripeKey),
       account = await stripe.accounts.retrieve(accountId);
     if (!account.charges_enabled)
       return json(409, {
@@ -73,6 +82,7 @@ export default async function (request) {
     const session = await stripe.checkout.sessions.create(
       {
         mode: "payment",
+        payment_method_types: ["card"],
         line_items: lineItems,
         success_url: `${origin}/loja/${store.slug}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/loja/${store.slug}?payment=cancelled`,

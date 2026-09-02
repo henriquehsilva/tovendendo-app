@@ -1787,13 +1787,63 @@ footer {
 .pix-whatsapp:hover {
   text-decoration: underline;
 }
-.wallet-button {
-  margin-top: 10px;
-  background: linear-gradient(135deg, #635bff, #4138cc);
+.checkout-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.checkout-methods .button {
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 66px;
+  padding: 10px 15px;
+  text-align: left;
+}
+.checkout-methods .button > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+.checkout-methods .button small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.78;
+}
+.payment-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+}
+.pix-checkout-button {
+  border: 1px solid #9bd9c3;
+  background: #effbf7;
+  color: #075e4c;
+}
+.pix-payment-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #32bc9b;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+.card-checkout-button {
+  border: 1px solid #c9c6ff;
+  background: linear-gradient(135deg, #635bff, #493fd6);
   color: #fff;
 }
-.wallet-button:hover {
-  background: #332ca5;
+.card-checkout-button svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.card-checkout-button:hover {
+  background: #4138cc;
+}
+@media (max-width: 520px) {
+  .checkout-methods {
+    grid-template-columns: 1fr;
+  }
 }
 .stripe-connect-card {
   display: grid;

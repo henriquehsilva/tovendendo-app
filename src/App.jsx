@@ -816,38 +816,59 @@ function StorePage() {
               <span>Total</span>
               <b>{money(total)}</b>
             </div>
-            {store.payment?.enabled ? (
-              <>
+            <div className="checkout-methods">
+              {store.payment?.enabled && (
+                <>
+                  <button
+                    className="button pix-checkout-button full"
+                    disabled={paying}
+                    onClick={checkout}
+                  >
+                    <span className="payment-icon pix-payment-icon">PIX</span>
+                    <span>
+                      <b>{paying ? "Gerando Pix…" : "Pagar com Pix"}</b>
+                      <small>QR Code e Pix copia e cola</small>
+                    </span>
+                  </button>
+                </>
+              )}
+              {(store.payment?.stripeConnected ||
+                store.payment?.stripeAccountId ||
+                Object.keys(store.payment?.stripeAccountIds || {}).length >
+                  0) && (
                 <button
-                  className="button primary full"
+                  className="button card-checkout-button full"
                   disabled={paying}
-                  onClick={checkout}
+                  onClick={digitalCheckout}
                 >
-                  {paying ? "Gerando Pix…" : "Efetuar pagamento via Pix"}
+                  <svg
+                    className="payment-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                    <path d="M2 10h20M6 15h4" />
+                  </svg>
+                  <span>
+                    <b>{paying ? "Abrindo Stripe…" : "Débito ou crédito"}</b>
+                    <small>Pagamento seguro pela Stripe</small>
+                  </span>
                 </button>
-                <small className="secure">
-                  Pagamento direto para a chave Pix desta loja.
-                </small>
-              </>
-            ) : (
-              <a
-                className="button primary full"
-                href={`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Olá! Quero comprar na ${store.brand}. Total: ${money(total)}`)}`}
-              >
-                Finalizar pelo WhatsApp
-              </a>
-            )}
-            {store.payment?.stripeConnected && (
-              <button
-                className="button wallet-button full"
-                disabled={paying}
-                onClick={digitalCheckout}
-              >
-                {paying
-                  ? "Abrindo pagamento…"
-                  : "Pagar com cartão ou carteira digital"}
-              </button>
-            )}
+              )}
+            </div>
+            {!store.payment?.enabled &&
+              !store.payment?.stripeConnected &&
+              !store.payment?.stripeAccountId && (
+                <a
+                  className="button primary full"
+                  href={`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Olá! Quero comprar na ${store.brand}. Total: ${money(total)}`)}`}
+                >
+                  Finalizar pelo WhatsApp
+                </a>
+              )}
+            <small className="secure">
+              Escolha como deseja concluir o pagamento.
+            </small>
             {error && <p className="error">{error}</p>}
           </section>
         </div>
