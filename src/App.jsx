@@ -587,6 +587,31 @@ function StorePage() {
       setPaying(false);
     }
   };
+  const digitalCheckout = async () => {
+    const items = visible
+      .filter((product) => cart[product.id])
+      .map((product) => ({ id: product.id, quantity: cart[product.id] }));
+    if (!items.length) return;
+    setPaying(true);
+    setError("");
+    try {
+      const response = await fetch(
+        "/.netlify/functions/create-store-checkout",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storeId: store.id, items }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.error || "Não foi possível abrir o pagamento.");
+      location.href = data.checkoutUrl;
+    } catch (error) {
+      setError(error.message);
+      setPaying(false);
+    }
+  };
   if (loading) return <main className="center">Carregando loja…</main>;
   if (!store?.published)
     return (
@@ -742,6 +767,17 @@ function StorePage() {
               >
                 Finalizar pelo WhatsApp
               </a>
+            )}
+            {store.payment?.stripeConnected && (
+              <button
+                className="button wallet-button full"
+                disabled={paying}
+                onClick={digitalCheckout}
+              >
+                {paying
+                  ? "Abrindo pagamento…"
+                  : "Pagar com cartão ou carteira digital"}
+              </button>
             )}
             {error && <p className="error">{error}</p>}
           </section>
@@ -911,6 +947,44 @@ function Admin({ user, onLogout }) {
         );
       });
   }, [user]);
+  useEffect(() => {
+    const stripeReturn = new URLSearchParams(location.search).get("stripe");
+    if (!stripeReturn || !store?.id || !user || !firebaseEnabled) return;
+    const refresh = async () => {
+      setTab("payment");
+      setSaved("Confirmando sua conta Stripe…");
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch(
+          "/.netlify/functions/stripe-account-status",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ storeId: store.id }),
+          },
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        setStore((current) => ({
+          ...current,
+          payment: { ...current.payment, stripeConnected: data.connected },
+        }));
+        setSaved(
+          data.connected
+            ? "Pagamento por cartão e carteira digital ativado ✓"
+            : "Finalize todos os dados solicitados pela Stripe para ativar os pagamentos.",
+        );
+      } catch (error) {
+        setSaved(`Não foi possível confirmar a conta Stripe: ${error.message}`);
+      } finally {
+        history.replaceState({}, "", location.pathname);
+      }
+    };
+    refresh();
+  }, [store?.id, user]);
   if (!user) return <Navigate to="/admin/login" />;
   if (loadError)
     return (
@@ -926,6 +1000,33 @@ function Admin({ user, onLogout }) {
   const update = (key, value) => setStore((s) => ({ ...s, [key]: value }));
   const updatePayment = (key, value) =>
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
+  const connectStripe = async () => {
+    const storeId = store.id || (await save({}, false));
+    if (!storeId) return;
+    setSaving(true);
+    setSaved("Abrindo o cadastro seguro da Stripe…");
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(
+        "/.netlify/functions/create-connect-account",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ storeId }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.error || "Não foi possível abrir a Stripe.");
+      location.href = data.onboardingUrl;
+    } catch (error) {
+      setSaved(error.message);
+      setSaving(false);
+    }
+  };
   const uploadImage = async (file, folder) => {
     if (!file?.type.startsWith("image/"))
       throw new Error("Escolha um arquivo de imagem válido.");
@@ -1261,6 +1362,26 @@ function Admin({ user, onLogout }) {
                   O valor vai diretamente para esta chave Pix. Confira
                   cuidadosamente os dados antes de publicar a loja.
                 </p>
+              </div>
+              <div className="stripe-connect-card">
+                <div className="stripe-icon">S</div>
+                <div>
+                  <b>Cartão e carteiras digitais</b>
+                  <p>
+                    {store.payment?.stripeConnected
+                      ? "Conta Stripe ativa. Seus clientes podem pagar com cartão e carteiras compatíveis, como Google Pay."
+                      : "Conecte uma conta Stripe para receber diretamente pelas vendas da sua loja."}
+                  </p>
+                </div>
+                <button
+                  className="button outline"
+                  disabled={saving}
+                  onClick={connectStripe}
+                >
+                  {store.payment?.stripeConnected
+                    ? "Gerenciar conexão"
+                    : "Ativar com Stripe"}
+                </button>
               </div>
             </>
           )}
