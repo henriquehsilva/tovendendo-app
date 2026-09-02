@@ -912,6 +912,90 @@ function PixModal({ store, total, payment, onClose }) {
     </div>
   );
 }
+
+const drawWrappedText = (
+  context,
+  text,
+  x,
+  y,
+  maxWidth,
+  lineHeight,
+  maxLines,
+) => {
+  const words = String(text || "").split(/\s+/);
+  let line = "";
+  let lines = 0;
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (context.measureText(candidate).width > maxWidth && line) {
+      context.fillText(line, x, y + lines * lineHeight);
+      line = word;
+      lines += 1;
+      if (lines >= maxLines) return;
+    } else line = candidate;
+  }
+  if (line && lines < maxLines)
+    context.fillText(line, x, y + lines * lineHeight);
+};
+
+const createProductShareImage = async (store, product, imageUrl) => {
+  const response = await fetch(imageUrl, { mode: "cors" });
+  const contentType = response.headers.get("content-type") || "";
+  if (!response.ok || !contentType.startsWith("image/"))
+    throw new Error("A foto do produto não pôde ser carregada.");
+  const image = await createImageBitmap(await response.blob());
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const photoHeight = 850;
+  const scale = Math.max(
+    canvas.width / image.width,
+    photoHeight / image.height,
+  );
+  const width = image.width * scale;
+  const height = image.height * scale;
+  context.drawImage(
+    image,
+    (canvas.width - width) / 2,
+    (photoHeight - height) / 2,
+    width,
+    height,
+  );
+  context.fillStyle = "#55b8e8";
+  context.fillRect(0, photoHeight, 14, canvas.height - photoHeight);
+  context.fillStyle = "#247da9";
+  context.font = "700 28px Arial";
+  context.fillText(String(store.brand || "Tô Vendendo").toUpperCase(), 70, 920);
+  context.fillStyle = "#12202d";
+  context.font = "700 58px Arial";
+  drawWrappedText(context, product.name, 70, 995, 940, 66, 2);
+  context.fillStyle = "#247da9";
+  context.font = "700 45px Arial";
+  context.fillText(money(product.price), 70, 1135);
+  context.fillStyle = "#667784";
+  context.font = "400 27px Arial";
+  drawWrappedText(context, product.description, 70, 1190, 940, 36, 2);
+  context.fillStyle = "#12202d";
+  context.font = "600 23px Arial";
+  context.fillText(`tovendendo.app/loja/${store.slug}`, 70, 1310);
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (blob) =>
+        blob
+          ? resolve(
+              new File([blob], `${slugify(product.name)}.png`, {
+                type: "image/png",
+              }),
+            )
+          : reject(new Error("Não foi possível montar a imagem.")),
+      "image/png",
+    ),
+  );
+};
+
 function ProductCard({ store, product, quantity, onChange }) {
   const images = productImages(product);
   const [current, setCurrent] = useState(0);
@@ -961,7 +1045,6 @@ function ProductCard({ store, product, quantity, onChange }) {
   const share = async () => {
     if (sharing) return;
     setSharing(true);
-    const productUrl = `${location.origin}/loja/${store.slug}#produto-${product.id}`;
     const previewUrl = `${location.origin}/.netlify/functions/product-preview?${new URLSearchParams({ storeId: store.id, productId: product.id })}`;
     const message = [
       `Olha este item da ${store.brand}:`,
@@ -973,18 +1056,9 @@ function ProductCard({ store, product, quantity, onChange }) {
       .join("\n");
     try {
       if (navigator.share && navigator.canShare) {
-        const response = await fetch(images[0]);
-        const blob = await response.blob();
-        const extension =
-          blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
-        const file = new File([blob], `${slugify(product.name)}.${extension}`, {
-          type: blob.type || "image/jpeg",
-        });
+        const file = await createProductShareImage(store, product, images[0]);
         if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            text: `${message}\n${productUrl}`,
-          });
+          await navigator.share({ files: [file] });
           return;
         }
       }
