@@ -918,6 +918,7 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(Number(product.likesCount) || 0);
   const [liked, setLiked] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const move = (direction) =>
     setCurrent((index) => (index + direction + images.length) % images.length);
   useEffect(
@@ -957,23 +958,51 @@ function ProductCard({ store, product, quantity, onChange }) {
       setLikesCount((count) => Math.max(0, count - 1));
     }
   };
-  const share = () => {
+  const share = async () => {
+    if (sharing) return;
+    setSharing(true);
     const productUrl = `${location.origin}/loja/${store.slug}#produto-${product.id}`;
+    const previewUrl = `${location.origin}/.netlify/functions/product-preview?${new URLSearchParams({ storeId: store.id, productId: product.id })}`;
     const message = [
       `Olha este item da ${store.brand}:`,
       `*${product.name}*`,
       money(product.price),
       product.description,
-      images[0],
-      productUrl,
     ]
       .filter(Boolean)
       .join("\n");
-    window.open(
-      `https://wa.me/?text=${encodeURIComponent(message)}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
+    try {
+      if (navigator.share && navigator.canShare) {
+        const response = await fetch(images[0]);
+        const blob = await response.blob();
+        const extension =
+          blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+        const file = new File([blob], `${slugify(product.name)}.${extension}`, {
+          type: blob.type || "image/jpeg",
+        });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            text: `${message}\n${productUrl}`,
+          });
+          return;
+        }
+      }
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(`${message}\n${previewUrl}`)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } catch (error) {
+      if (error.name !== "AbortError")
+        window.open(
+          `https://wa.me/?text=${encodeURIComponent(`${message}\n${previewUrl}`)}`,
+          "_blank",
+          "noopener,noreferrer",
+        );
+    } finally {
+      setSharing(false);
+    }
   };
   return (
     <>
@@ -1046,20 +1075,34 @@ function ProductCard({ store, product, quantity, onChange }) {
               onClick={like}
               aria-label="Curtir produto"
             >
-              <span aria-hidden="true">{liked ? "♥" : "♡"}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+              </svg>
               {likesCount || "Curtir"}
             </button>
             <button
               onClick={() => setCommentsOpen(true)}
               aria-label="Ver comentários"
             >
-              <span aria-hidden="true">◇</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+              </svg>
               {product.commentsCount
                 ? `${product.commentsCount} comentários`
                 : "Comentar"}
             </button>
-            <button onClick={share} aria-label="Compartilhar no WhatsApp">
-              <span aria-hidden="true">↗</span> Compartilhar
+            <button
+              onClick={share}
+              disabled={sharing}
+              aria-label="Compartilhar no WhatsApp"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" />
+              </svg>
+              {sharing ? "Preparando…" : "Compartilhar"}
             </button>
           </div>
         </div>
