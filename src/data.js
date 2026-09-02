@@ -12,6 +12,11 @@ export const demoStore = {
   instagram: "achadinhosdaana",
   address: "São Paulo · SP",
   hours: "Seg–Sáb · 9h às 18h",
+  categories: [
+    { id: "acessorios", name: "Acessórios" },
+    { id: "casa", name: "Casa" },
+    { id: "beleza", name: "Beleza" },
+  ],
   payment: {
     enabled: true,
     pixKey: "11999999999",
@@ -24,6 +29,7 @@ export const demoProducts = [
     id: "1",
     name: "Bolsa urbana",
     category: "Acessórios",
+    categoryId: "acessorios",
     description: "Leve, resistente e perfeita para todos os dias.",
     price: 129.9,
     stock: 8,
@@ -35,6 +41,7 @@ export const demoProducts = [
     id: "2",
     name: "Luminária minimalista",
     category: "Casa",
+    categoryId: "casa",
     description: "Luz aconchegante com design contemporâneo.",
     price: 89.9,
     stock: 3,
@@ -46,6 +53,7 @@ export const demoProducts = [
     id: "3",
     name: "Kit autocuidado",
     category: "Beleza",
+    categoryId: "beleza",
     description: "Um presente delicado para uma pausa especial.",
     price: 74.5,
     stock: 0,
@@ -61,5 +69,6 @@ export const emptyStore = (uid) => ({
   brand: "",
   ownerId: uid,
   published: false,
+  categories: [],
   payment: { enabled: false, pixKey: "", pixReceiverName: "", pixCity: "" },
 });

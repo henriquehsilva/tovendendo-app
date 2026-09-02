@@ -25,8 +25,13 @@ export default async function (request) {
       storeSnap = await storeRef.get();
     if (!storeSnap.exists || storeSnap.data().ownerId !== user.uid)
       return json(403, { error: "Loja não autorizada." });
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    let accountId = storeSnap.data().payment?.stripeAccountId;
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY.trim();
+    const stripeMode = stripeSecretKey.startsWith("sk_test_") ? "test" : "live";
+    const stripe = new Stripe(stripeSecretKey);
+    const payment = storeSnap.data().payment || {};
+    let accountId =
+      payment.stripeAccountIds?.[stripeMode] ||
+      (payment.stripeMode === stripeMode ? payment.stripeAccountId : null);
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: "express",
@@ -44,8 +49,13 @@ export default async function (request) {
       await storeRef.set(
         {
           payment: {
-            ...storeSnap.data().payment,
+            ...payment,
             stripeAccountId: accountId,
+            stripeAccountIds: {
+              ...(payment.stripeAccountIds || {}),
+              [stripeMode]: accountId,
+            },
+            stripeMode,
             stripeConnected: false,
           },
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -65,9 +75,18 @@ export default async function (request) {
       return_url: `${origin}/admin?stripe=return`,
       type: "account_onboarding",
     });
-    return json(200, { onboardingUrl: link.url });
+    return json(200, { onboardingUrl: link.url, mode: stripeMode });
   } catch (error) {
     console.error(error);
+    if (
+      String(error?.message || "").includes(
+        "complete your platform profile to use Connect",
+      )
+    )
+      return json(403, {
+        error:
+          "A Stripe está em modo produção, mas ainda não aprovou o perfil Connect da plataforma. Para testar agora, configure STRIPE_SECRET_KEY com uma chave sk_test_... da mesma conta Stripe.",
+      });
     return json(500, {
       error: error.message || "Não foi possível abrir o cadastro Stripe.",
     });

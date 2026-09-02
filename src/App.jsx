@@ -94,6 +94,41 @@ const slugify = (value) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+const storeCategories = (store, products = []) => {
+  const categories = Array.isArray(store?.categories)
+    ? store.categories
+        .filter((category) => category?.id)
+        .map((item) => ({ ...item }))
+    : [];
+  const names = new Set(
+    categories
+      .filter((category) => category.name?.trim())
+      .map((category) => category.name.trim().toLowerCase()),
+  );
+  products.forEach((product) => {
+    const name = String(product.category || "").trim();
+    if (name && !names.has(name.toLowerCase())) {
+      categories.push({
+        id: `legacy-${slugify(name)}`,
+        name,
+      });
+      names.add(name.toLowerCase());
+    }
+  });
+  return categories;
+};
+const productCategoryId = (product, categories) =>
+  (categories.some((category) => category.id === product.categoryId)
+    ? product.categoryId
+    : "") ||
+  categories.find(
+    (category) =>
+      category.name.toLowerCase() ===
+      String(product.category || "")
+        .trim()
+        .toLowerCase(),
+  )?.id ||
+  "";
 const localStore = () => JSON.parse(localStorage.getItem("tv-store") || "null");
 const localProducts = () =>
   JSON.parse(localStorage.getItem("tv-products") || "null");
@@ -502,6 +537,7 @@ function StorePage() {
   const [paying, setPaying] = useState(false);
   const [pixPayment, setPixPayment] = useState(null);
   const [error, setError] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
   useEffect(() => {
     if (!firebaseEnabled) {
       const saved = localStore();
@@ -544,6 +580,19 @@ function StorePage() {
     return () => unsub();
   }, [slug]);
   const visible = products.filter((x) => x.active !== false);
+  const allCategories = storeCategories(store, visible);
+  const categories = allCategories.filter((category) =>
+    visible.some(
+      (product) => productCategoryId(product, allCategories) === category.id,
+    ),
+  );
+  const displayed =
+    activeCategory === "all"
+      ? visible
+      : visible.filter(
+          (product) =>
+            productCategoryId(product, allCategories) === activeCategory,
+        );
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
   const total = visible.reduce(
     (sum, p) => sum + (cart[p.id] || 0) * Number(p.price),
@@ -658,8 +707,27 @@ function StorePage() {
             </div>
             <span>{visible.length} itens</span>
           </div>
+          {categories.length > 1 && (
+            <div className="category-filter" aria-label="Categorias">
+              <button
+                className={activeCategory === "all" ? "active" : ""}
+                onClick={() => setActiveCategory("all")}
+              >
+                Todos
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  className={activeCategory === category.id ? "active" : ""}
+                  onClick={() => setActiveCategory(category.id)}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="product-grid">
-            {visible.map((product) => (
+            {displayed.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -1000,6 +1068,7 @@ function Admin({ user, onLogout }) {
   const update = (key, value) => setStore((s) => ({ ...s, [key]: value }));
   const updatePayment = (key, value) =>
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
+  const categories = storeCategories(store, products);
   const connectStripe = async () => {
     const storeId = store.id || (await save({}, false));
     if (!storeId) return;
@@ -1054,6 +1123,7 @@ function Admin({ user, onLogout }) {
     const normalized = {
       ...store,
       ...overrides,
+      categories,
       slug: store.slug || slugify(store.brand),
       ownerId: user.uid,
       updatedAt: serverTimestamp(),
@@ -1061,6 +1131,35 @@ function Admin({ user, onLogout }) {
     if (!normalized.brand.trim() || !normalized.slug) {
       setSaved("Informe o nome e o endereço da loja antes de salvar.");
       setSaving(false);
+      return null;
+    }
+    if (products.length && !categories.length) {
+      setSaved("Cadastre uma categoria antes de salvar os produtos.");
+      setSaving(false);
+      setTab("categories");
+      return null;
+    }
+    const categoryNames = categories.map((category) =>
+      String(category.name || "")
+        .trim()
+        .toLowerCase(),
+    );
+    if (
+      categoryNames.some((name) => !name) ||
+      new Set(categoryNames).size !== categoryNames.length
+    ) {
+      setSaved("Use nomes preenchidos e diferentes para cada categoria.");
+      setSaving(false);
+      setTab("categories");
+      return null;
+    }
+    const uncategorized = products.find(
+      (product) => !productCategoryId(product, categories),
+    );
+    if (uncategorized) {
+      setSaved(`Escolha uma categoria para o produto “${uncategorized.name}”.`);
+      setSaving(false);
+      setTab("products");
       return null;
     }
     let persistedStoreId = store.id || null;
@@ -1077,7 +1176,13 @@ function Admin({ user, onLogout }) {
           throw new Error("O Firestore não confirmou a criação da loja.");
         for (const p of products) {
           const productId = p.id || crypto.randomUUID();
-          const { id: ignoredProductId, ...productData } = p;
+          const categoryId = productCategoryId(p, categories);
+          const category = categories.find((item) => item.id === categoryId);
+          const { id: ignoredProductId, ...productData } = {
+            ...p,
+            categoryId,
+            category: category?.name || "",
+          };
           await setDoc(
             doc(db, "stores", storeRef.id, "products", productId),
             productData,
@@ -1098,7 +1203,7 @@ function Admin({ user, onLogout }) {
           : "Alterações salvas ✓",
       );
       if (!overrides.published && advance) {
-        const steps = ["store", "products", "payment", "publish"];
+        const steps = ["store", "categories", "products", "payment", "publish"];
         const nextStep = steps[steps.indexOf(tab) + 1];
         if (nextStep) setTab(nextStep);
       }
@@ -1117,12 +1222,18 @@ function Admin({ user, onLogout }) {
     }
   };
   const add = () => {
+    if (!categories.length) {
+      setSaved("Cadastre a primeira categoria antes de adicionar produtos.");
+      setTab("categories");
+      return;
+    }
     setProducts((p) => [
       ...p,
       {
         id: crypto.randomUUID(),
         name: "Novo produto",
-        category: "",
+        category: categories[0].name,
+        categoryId: categories[0].id,
         description: "",
         price: 0,
         stock: 0,
@@ -1137,6 +1248,44 @@ function Admin({ user, onLogout }) {
     setProducts((ps) =>
       ps.map((p) => (p.id === id ? { ...p, [key]: value } : p)),
     );
+  const addCategory = () =>
+    update("categories", [
+      ...categories,
+      {
+        id: crypto.randomUUID(),
+        name: `Categoria ${categories.length + 1}`,
+      },
+    ]);
+  const renameCategory = (id, name) => {
+    update(
+      "categories",
+      categories.map((category) =>
+        category.id === id ? { ...category, name } : category,
+      ),
+    );
+    setProducts((current) =>
+      current.map((product) =>
+        productCategoryId(product, categories) === id
+          ? { ...product, categoryId: id, category: name }
+          : product,
+      ),
+    );
+  };
+  const removeCategory = (category) => {
+    const inUse = products.some(
+      (product) => productCategoryId(product, categories) === category.id,
+    );
+    if (inUse) {
+      setSaved(
+        "Mova ou exclua os produtos desta categoria antes de removê-la.",
+      );
+      return;
+    }
+    update(
+      "categories",
+      categories.filter((item) => item.id !== category.id),
+    );
+  };
   const remove = async (p) => {
     setProducts((ps) => ps.filter((x) => x.id !== p.id));
     if (firebaseEnabled && store.id)
@@ -1162,9 +1311,10 @@ function Admin({ user, onLogout }) {
           <p>PAINEL DA LOJA</p>
           {[
             ["store", "01 · Loja"],
-            ["products", "02 · Produtos"],
-            ["payment", "03 · Pagamentos"],
-            ["publish", "04 · Publicar"],
+            ["categories", "02 · Categorias"],
+            ["products", "03 · Produtos"],
+            ["payment", "04 · Pagamentos"],
+            ["publish", "05 · Publicar"],
           ].map((x) => (
             <button
               key={x[0]}
@@ -1242,6 +1392,53 @@ function Admin({ user, onLogout }) {
               </div>
             </>
           )}
+          {tab === "categories" && (
+            <>
+              <div className="title-actions">
+                <div>
+                  <p className="eyebrow">ORGANIZAÇÃO DO CATÁLOGO</p>
+                  <h1>Suas categorias.</h1>
+                </div>
+                <button className="button outline" onClick={addCategory}>
+                  + Nova categoria
+                </button>
+              </div>
+              <p className="intro">
+                Crie as categorias antes dos produtos. Cada categoria pode
+                reunir quantos itens você quiser.
+              </p>
+              <div className="category-editors">
+                {categories.map((category) => (
+                  <div className="category-editor" key={category.id}>
+                    <Field
+                      label="Nome da categoria"
+                      value={category.name}
+                      onChange={(name) => renameCategory(category.id, name)}
+                    />
+                    <span>
+                      {
+                        products.filter(
+                          (product) =>
+                            productCategoryId(product, categories) ===
+                            category.id,
+                        ).length
+                      }{" "}
+                      itens
+                    </span>
+                    <button
+                      className="danger"
+                      onClick={() => removeCategory(category)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                ))}
+                {!categories.length && (
+                  <div className="notice">Nenhuma categoria cadastrada.</div>
+                )}
+              </div>
+            </>
+          )}
           {tab === "products" && (
             <>
               <div className="title-actions">
@@ -1263,10 +1460,17 @@ function Admin({ user, onLogout }) {
                         value={p.name}
                         onChange={(v) => changeProduct(p.id, "name", v)}
                       />
-                      <Field
+                      <SelectField
                         label="Categoria"
-                        value={p.category}
-                        onChange={(v) => changeProduct(p.id, "category", v)}
+                        value={productCategoryId(p, categories)}
+                        options={categories}
+                        onChange={(categoryId) => {
+                          const category = categories.find(
+                            (item) => item.id === categoryId,
+                          );
+                          changeProduct(p.id, "categoryId", categoryId);
+                          changeProduct(p.id, "category", category?.name || "");
+                        }}
                       />
                       <Field
                         area
@@ -1498,6 +1702,29 @@ function Field({ label, value, onChange, area, type = "text", prefix }) {
             onChange={(e) => onChange(e.target.value)}
           />
         )}
+      </div>
+    </label>
+  );
+}
+function SelectField({ label, value, options, onChange }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <div>
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          required
+        >
+          <option value="" disabled>
+            Selecione uma categoria
+          </option>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
       </div>
     </label>
   );
