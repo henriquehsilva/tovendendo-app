@@ -11,7 +11,7 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from "firebase/auth";
 import {
@@ -361,7 +361,7 @@ function Login({ user }) {
     setGoogleLoading(true);
     setError("");
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithRedirect(auth, googleProvider);
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user")
         setError(googleAuthError(err));
@@ -458,23 +458,24 @@ function StorePage() {
       return;
     }
     let unsub = () => {};
-    getDocs(query(collection(db, "stores"), where("slug", "==", slug))).then(
-      (s) => {
-        const d = s.docs[0];
-        if (!d) {
-          setLoading(false);
-          return;
-        }
-        setStore({ id: d.id, ...d.data() });
-        unsub = onSnapshot(
-          collection(db, "stores", d.id, "products"),
-          (snap) => {
-            setProducts(snap.docs.map((x) => ({ id: x.id, ...x.data() })));
-            setLoading(false);
-          },
-        );
-      },
-    );
+    getDocs(
+      query(
+        collection(db, "stores"),
+        where("slug", "==", slug),
+        where("published", "==", true),
+      ),
+    ).then((s) => {
+      const d = s.docs[0];
+      if (!d) {
+        setLoading(false);
+        return;
+      }
+      setStore({ id: d.id, ...d.data() });
+      unsub = onSnapshot(collection(db, "stores", d.id, "products"), (snap) => {
+        setProducts(snap.docs.map((x) => ({ id: x.id, ...x.data() })));
+        setLoading(false);
+      });
+    });
     return () => unsub();
   }, [slug]);
   const visible = products.filter((x) => x.active !== false);
@@ -691,6 +692,7 @@ function Admin({ user, onLogout }) {
   const [products, setProducts] = useState([]);
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
+  const [loadError, setLoadError] = useState("");
   useEffect(() => {
     if (!user) return;
     if (!firebaseEnabled) {
@@ -698,19 +700,36 @@ function Admin({ user, onLogout }) {
       setProducts(localProducts() || demoProducts);
       return;
     }
-    getDocs(
-      query(collection(db, "stores"), where("ownerId", "==", user.uid)),
-    ).then(async (snap) => {
-      if (snap.empty) setStore(emptyStore(user.uid));
-      else {
-        const d = snap.docs[0];
-        setStore({ id: d.id, ...d.data() });
-        const p = await getDocs(collection(db, "stores", d.id, "products"));
-        setProducts(p.docs.map((x) => ({ id: x.id, ...x.data() })));
-      }
-    });
+    getDocs(query(collection(db, "stores"), where("ownerId", "==", user.uid)))
+      .then(async (snap) => {
+        if (snap.empty) setStore(emptyStore(user.uid));
+        else {
+          const d = snap.docs[0];
+          setStore({ id: d.id, ...d.data() });
+          const p = await getDocs(collection(db, "stores", d.id, "products"));
+          setProducts(p.docs.map((x) => ({ id: x.id, ...x.data() })));
+        }
+      })
+      .catch((error) => {
+        console.error("Falha ao abrir painel:", error);
+        setLoadError(
+          error.code === "permission-denied"
+            ? "O Firestore recusou o acesso. Publique o arquivo firestore.rules deste projeto no mesmo Firebase usado em produção."
+            : `Não foi possível abrir o painel: ${error.message}`,
+        );
+      });
   }, [user]);
   if (!user) return <Navigate to="/admin/login" />;
+  if (loadError)
+    return (
+      <main className="empty">
+        <h1>Não foi possível abrir o painel</h1>
+        <p>{loadError}</p>
+        <button className="button outline" onClick={onLogout}>
+          Sair e tentar novamente
+        </button>
+      </main>
+    );
   if (!store) return <main className="center">Abrindo painel…</main>;
   const update = (key, value) => setStore((s) => ({ ...s, [key]: value }));
   const updatePayment = (key, value) =>
@@ -726,13 +745,16 @@ function Admin({ user, onLogout }) {
       const ref = store.id
         ? doc(db, "stores", store.id)
         : doc(collection(db, "stores"));
-      await setDoc(ref, { ...normalized, id: undefined }, { merge: true });
-      for (const p of products)
+      const { id: ignoredStoreId, ...storeData } = normalized;
+      await setDoc(ref, storeData, { merge: true });
+      for (const p of products) {
+        const { id: ignoredProductId, ...productData } = p;
         await setDoc(
           doc(db, "stores", ref.id, "products", p.id || crypto.randomUUID()),
-          { ...p, id: undefined },
+          productData,
           { merge: true },
         );
+      }
       setStore({ ...normalized, id: ref.id });
     } else {
       saveLocal(
