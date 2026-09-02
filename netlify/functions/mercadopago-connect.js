@@ -20,7 +20,9 @@ export const handler = async (event) => {
     ].filter((key) => !process.env[key]);
     if (missing.length)
       return json(503, {
-        error: `Integração incompleta no servidor. Configure: ${missing.join(", ")}.`,
+        error:
+          "A conexão com o Mercado Pago ainda não foi habilitada pela plataforma.",
+        code: "MERCADO_PAGO_NOT_CONFIGURED",
       });
     const admin = firebaseAdmin();
     const token = String(event.headers.authorization || "").replace(

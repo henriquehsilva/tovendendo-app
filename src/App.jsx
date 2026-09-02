@@ -859,7 +859,7 @@ function Admin({ user, onLogout }) {
     await uploadBytes(imageRef, file, { contentType: file.type });
     return getDownloadURL(imageRef);
   };
-  const save = async (overrides = {}) => {
+  const save = async (overrides = {}, advance = true) => {
     setSaving(true);
     setSaved("");
     const normalized = {
@@ -869,16 +869,18 @@ function Admin({ user, onLogout }) {
       ownerId: user.uid,
       updatedAt: serverTimestamp(),
     };
-    if (!normalized.brand.trim() || !normalized.slug)
-      return void (setSaved(
-        "Informe o nome e o endereço da loja antes de salvar.",
-      ),
-      setSaving(false));
+    if (!normalized.brand.trim() || !normalized.slug) {
+      setSaved("Informe o nome e o endereço da loja antes de salvar.");
+      setSaving(false);
+      return null;
+    }
+    let persistedStoreId = store.id || null;
     try {
       if (firebaseEnabled) {
         const storeRef = store.id
           ? doc(db, "stores", store.id)
           : doc(collection(db, "stores"));
+        persistedStoreId = storeRef.id;
         const { id: ignoredStoreId, ...storeData } = normalized;
         await setDoc(storeRef, storeData, { merge: true });
         const savedStore = await getDoc(storeRef);
@@ -906,12 +908,13 @@ function Admin({ user, onLogout }) {
           ? "Loja publicada com sucesso ✓"
           : "Alterações salvas ✓",
       );
-      if (!overrides.published) {
+      if (!overrides.published && advance) {
         const steps = ["store", "products", "payment", "publish"];
         const nextStep = steps[steps.indexOf(tab) + 1];
         if (nextStep) setTab(nextStep);
       }
       setTimeout(() => setSaved(""), 3500);
+      return persistedStoreId;
     } catch (error) {
       console.error("Falha ao salvar loja:", error);
       setSaved(
@@ -919,16 +922,22 @@ function Admin({ user, onLogout }) {
           ? "Sem permissão para salvar. Saia, entre novamente e confirme se as regras do Firestore foram publicadas."
           : `Não foi possível salvar: ${error.message}`,
       );
+      return null;
     } finally {
       setSaving(false);
     }
   };
   const connect = async () => {
-    if (!firebaseEnabled || !store.id) {
-      setSaved("Salve a loja com Firebase antes de conectar.");
+    if (!firebaseEnabled) {
+      setSaved(
+        "A conexão do Mercado Pago está disponível após configurar o Firebase.",
+      );
       return;
     }
     try {
+      const storeId = store.id || (await save({}, false));
+      if (!storeId) return;
+      setSaved("Abrindo o Mercado Pago para autorizar sua conta…");
       const token = await user.getIdToken();
       const response = await fetch("/.netlify/functions/mercadopago-connect", {
         method: "POST",
@@ -936,10 +945,15 @@ function Admin({ user, onLogout }) {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ storeId: store.id }),
+        body: JSON.stringify({ storeId }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok)
+        throw new Error(
+          response.status === 503
+            ? "A conexão com o Mercado Pago está temporariamente indisponível. Tente novamente mais tarde ou fale com o suporte."
+            : data.error || "Não foi possível abrir o Mercado Pago.",
+        );
       location.href = data.authorizationUrl;
     } catch (err) {
       setSaved(err.message);
@@ -1174,10 +1188,16 @@ function Admin({ user, onLogout }) {
                       : "Autorize o Tô Vendendo no Mercado Pago."}
                   </small>
                 </div>
-                <button className="button outline" onClick={connect}>
-                  {store.payment?.connected
-                    ? "Trocar conta conectada"
-                    : "Conectar minha conta Mercado Pago"}
+                <button
+                  className="button outline"
+                  disabled={saving}
+                  onClick={connect}
+                >
+                  {saving
+                    ? "Preparando conexão…"
+                    : store.payment?.connected
+                      ? "Trocar conta conectada"
+                      : "Conectar minha conta Mercado Pago"}
                 </button>
               </div>
               <p className="oauth-explanation">
