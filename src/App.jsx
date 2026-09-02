@@ -288,7 +288,7 @@ function Plans({ onPro }) {
             <li>✓ Loja e link exclusivos</li>
             <li>✓ Cadastro de produtos</li>
             <li>✓ Controle de disponibilidade</li>
-            <li>✓ Pedidos pelo WhatsApp</li>
+            <li>✓ Compartilhamento pelo WhatsApp</li>
           </ul>
           <p className="plan-note">
             Depois do teste, assine o Pro para continuar usando o painel.
@@ -306,6 +306,8 @@ function Plans({ onPro }) {
             <li>✓ Tudo do período de teste</li>
             <li>✓ QR Code Pix por loja</li>
             <li>✓ Código Pix copia e cola</li>
+            <li>✓ Gateway de pagamento pela Stripe</li>
+            <li>✓ Comentários e curtidas por item</li>
             <li>✓ Gestão de disponibilidade</li>
             <li>✓ Suporte de configuração</li>
           </ul>
