@@ -10,11 +10,11 @@ import {
 import {
   createUserWithEmailAndPassword,
   browserLocalPersistence,
-  getRedirectResult,
+  inMemoryPersistence,
   onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   signOut,
 } from "firebase/auth";
 import {
@@ -346,17 +346,6 @@ function Login({ user }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
-  useEffect(() => {
-    if (!firebaseEnabled) return;
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) nav("/admin", { replace: true });
-      })
-      .catch((error) => {
-        setError(googleAuthError(error));
-      })
-      .finally(() => setGoogleLoading(false));
-  }, [nav]);
   if (user) return <Navigate to="/admin" />;
   const submit = async (e) => {
     e.preventDefault();
@@ -376,10 +365,17 @@ function Login({ user }) {
     setGoogleLoading(true);
     setError("");
     try {
-      await setPersistence(auth, browserLocalPersistence);
-      await signInWithRedirect(auth, googleProvider);
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch {
+        await setPersistence(auth, inMemoryPersistence);
+      }
+      const result = await signInWithPopup(auth, googleProvider);
+      if (!result.user) throw new Error("O Google não retornou um usuário.");
+      nav("/admin", { replace: true });
     } catch (err) {
-      setError(googleAuthError(err));
+      if (err.code !== "auth/popup-closed-by-user")
+        setError(googleAuthError(err));
       setGoogleLoading(false);
     }
   };
