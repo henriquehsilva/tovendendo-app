@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
   Navigate,
@@ -38,6 +38,12 @@ const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     Number(value) || 0,
   );
+const normalizeSearch = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 const storePalettes = [
   {
     id: "sky",
@@ -579,6 +585,9 @@ function StorePage() {
   const [pixPayment, setPixPayment] = useState(null);
   const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const [visibleLimit, setVisibleLimit] = useState(12);
+  const loadMoreRef = useRef(null);
   useEffect(() => {
     if (!firebaseEnabled) {
       const saved = localStore();
@@ -622,19 +631,59 @@ function StorePage() {
   }, [slug]);
   const visible = products;
   const purchasable = visible.filter((product) => !productUnavailable(product));
-  const allCategories = storeCategories(store, visible);
-  const categories = allCategories.filter((category) =>
-    visible.some(
-      (product) => productCategoryId(product, allCategories) === category.id,
-    ),
+  const allCategories = useMemo(
+    () => storeCategories(store, visible),
+    [store, visible],
   );
-  const displayed =
-    activeCategory === "all"
-      ? visible
-      : visible.filter(
+  const categories = useMemo(
+    () =>
+      allCategories.filter((category) =>
+        visible.some(
           (product) =>
-            productCategoryId(product, allCategories) === activeCategory,
-        );
+            productCategoryId(product, allCategories) === category.id,
+        ),
+      ),
+    [allCategories, visible],
+  );
+  const filtered = useMemo(() => {
+    const term = normalizeSearch(search);
+    return visible.filter((product) => {
+      if (
+        activeCategory !== "all" &&
+        productCategoryId(product, allCategories) !== activeCategory
+      )
+        return false;
+      if (!term) return true;
+      const category =
+        allCategories.find(
+          (item) => item.id === productCategoryId(product, allCategories),
+        )?.name || product.category;
+      return normalizeSearch(
+        [
+          product.name,
+          category,
+          product.description,
+          money(product.price),
+          Number(product.price).toFixed(2).replace(".", ","),
+        ].join(" "),
+      ).includes(term);
+    });
+  }, [visible, allCategories, activeCategory, search]);
+  const displayed = filtered.slice(0, visibleLimit);
+  useEffect(() => setVisibleLimit(12), [search, activeCategory]);
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || displayed.length >= filtered.length) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting)
+          setVisibleLimit((current) => Math.min(current + 12, filtered.length));
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [displayed.length, filtered.length]);
   const count = purchasable.reduce(
     (sum, product) => sum + (cart[product.id] || 0),
     0,
@@ -749,6 +798,24 @@ function StorePage() {
             </div>
             <span>{visible.length} itens</span>
           </div>
+          <label className="store-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m16 16 5 5" />
+            </svg>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por produto, categoria, descrição ou preço"
+              aria-label="Buscar produtos"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} aria-label="Limpar busca">
+                ×
+              </button>
+            )}
+          </label>
           {categories.length > 1 && (
             <div className="category-filter" aria-label="Categorias">
               <button
@@ -779,6 +846,17 @@ function StorePage() {
               />
             ))}
           </div>
+          {!filtered.length && (
+            <div className="empty-search">
+              <b>Nenhum item encontrado</b>
+              <span>Tente buscar usando outro nome, categoria ou preço.</span>
+            </div>
+          )}
+          {displayed.length < filtered.length && (
+            <div className="infinite-loader" ref={loadMoreRef}>
+              <i /> Carregando mais itens…
+            </div>
+          )}
         </section>
         <section className="about">
           <p className="eyebrow">SOBRE A LOJA</p>

@@ -327,6 +327,85 @@ footer {
   background: var(--blue-dark);
   color: #fff;
 }
+.store-search {
+  width: min(680px, 100%);
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: -14px 0 26px;
+  padding: 0 15px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px #17394d0d;
+}
+.store-search:focus-within {
+  border-color: var(--blue-dark);
+  box-shadow: 0 0 0 3px var(--pale);
+}
+.store-search svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  fill: none;
+  stroke: var(--blue-dark);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.store-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.store-search button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--pale);
+  color: var(--blue-dark);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.empty-search {
+  display: grid;
+  gap: 6px;
+  padding: 45px 20px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+.empty-search b {
+  color: var(--ink);
+  font-size: 1.1rem;
+}
+.infinite-loader {
+  min-height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.infinite-loader i {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--line);
+  border-top-color: var(--blue-dark);
+  border-radius: 50%;
+  animation: loader-spin 0.8s linear infinite;
+}
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .product-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
