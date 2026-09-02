@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-The Vite/React frontend lives in `src/`; `App.jsx` contains the routes and main views, while `data.js` supplies demo content. Netlify server functions live in `netlify/functions/`, including Mercado Pago OAuth, checkout, and webhook handlers. Firebase security configuration is defined by `firestore.rules` and `storage.rules`. Production assets are generated in `dist/` and must not be edited directly.
+The Vite/React frontend lives in `src/`; `App.jsx` contains the routes and main views, while `data.js` supplies demo content. Netlify server functions live in `netlify/functions/`, including Stripe Connect, checkout, social-preview, and webhook handlers. Firebase security configuration is defined by `firestore.rules` and `storage.rules`. Production assets are generated in `dist/` and must not be edited directly.
 
 ## Build, Test, and Development Commands
 
@@ -23,4 +23,4 @@ Add tests with every behavior change and regression fix. Mirror the source layou
 
 ## Commit & Pull Request Guidelines
 
-There is no Git history from which to infer an existing convention. Use concise, imperative subjects, preferably Conventional Commits (for example, `feat: add inventory warning`). Keep commits narrowly scoped. Pull requests should explain the change, verification performed, and configuration or migration impact. Link relevant issues and include screenshots for UI changes. Never commit `.env`, Mercado Pago tokens, or Firebase service-account JSON; update `.env.example` with placeholders instead.
+There is no Git history from which to infer an existing convention. Use concise, imperative subjects, preferably Conventional Commits (for example, `feat: add availability warning`). Keep commits narrowly scoped. Pull requests should explain the change, verification performed, and configuration or migration impact. Link relevant issues and include screenshots for UI changes. Never commit `.env`, Stripe secrets, or Firebase service-account JSON; update `.env.example` with placeholders instead.

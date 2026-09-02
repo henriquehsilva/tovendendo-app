@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Tô Vendendo",
   "short_name": "Tô Vendendo",
-  "description": "Crie sua loja virtual, controle o estoque e venda com Mercado Pago.",
+  "description": "Crie sua loja virtual, organize seus produtos e receba por Pix ou Stripe.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
