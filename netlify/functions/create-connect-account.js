@@ -37,6 +37,10 @@ export default async function (request) {
         type: "express",
         country: "BR",
         email: user.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
         business_profile: {
           name: storeSnap.data().brand,
           url: storeSnap.data().published

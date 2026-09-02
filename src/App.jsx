@@ -1358,10 +1358,22 @@ function Admin({ user, onLogout }) {
   }, [user]);
   useEffect(() => {
     const stripeReturn = new URLSearchParams(location.search).get("stripe");
-    if (!stripeReturn || !store?.id || !user || !firebaseEnabled) return;
+    const hasStripeAccount = Boolean(
+      store?.payment?.stripeAccountId ||
+      Object.keys(store?.payment?.stripeAccountIds || {}).length,
+    );
+    if (
+      (!stripeReturn && !hasStripeAccount) ||
+      !store?.id ||
+      !user ||
+      !firebaseEnabled
+    )
+      return;
     const refresh = async () => {
-      setTab("payment");
-      setSaved("Confirmando sua conta Stripe…");
+      if (stripeReturn) {
+        setTab("payment");
+        setSaved("Confirmando sua conta Stripe…");
+      }
       try {
         const token = await user.getIdToken();
         const response = await fetch(
@@ -1379,17 +1391,33 @@ function Admin({ user, onLogout }) {
         if (!response.ok) throw new Error(data.error);
         setStore((current) => ({
           ...current,
-          payment: { ...current.payment, stripeConnected: data.connected },
+          payment: {
+            ...current.payment,
+            stripeConnected: data.connected,
+            stripeAccountId: data.accountId || current.payment?.stripeAccountId,
+            stripeMode: data.mode,
+            stripeStatus: {
+              chargesEnabled: data.chargesEnabled,
+              payoutsEnabled: data.payoutsEnabled,
+              detailsSubmitted: data.detailsSubmitted,
+              disabledReason: data.disabledReason,
+              currentlyDue: data.currentlyDue || [],
+              pendingVerification: data.pendingVerification || [],
+            },
+          },
         }));
-        setSaved(
-          data.connected
-            ? "Pagamento por cartão e carteira digital ativado ✓"
-            : "Finalize todos os dados solicitados pela Stripe para ativar os pagamentos.",
-        );
+        if (stripeReturn)
+          setSaved(
+            data.connected
+              ? "Pagamento por cartão e carteira digital ativado ✓"
+              : data.currentlyDue?.length
+                ? `Conta conectada, mas existem ${data.currentlyDue.length} dados pendentes na Stripe.`
+                : "Conta conectada. A Stripe ainda está verificando os dados enviados.",
+          );
       } catch (error) {
         setSaved(`Não foi possível confirmar a conta Stripe: ${error.message}`);
       } finally {
-        history.replaceState({}, "", location.pathname);
+        if (stripeReturn) history.replaceState({}, "", location.pathname);
       }
     };
     refresh();
@@ -1915,8 +1943,26 @@ function Admin({ user, onLogout }) {
                   <p>
                     {store.payment?.stripeConnected
                       ? "Conta Stripe ativa. Seus clientes podem pagar com cartão e carteiras compatíveis, como Google Pay."
-                      : "Conecte uma conta Stripe para receber diretamente pelas vendas da sua loja."}
+                      : store.payment?.stripeAccountId ||
+                          Object.keys(store.payment?.stripeAccountIds || {})
+                            .length
+                        ? store.payment?.stripeStatus?.currentlyDue?.length
+                          ? `Conta conectada, com ${store.payment.stripeStatus.currentlyDue.length} dados pendentes. Abra a Stripe para concluir.`
+                          : "Conta conectada. A Stripe está verificando ou habilitando os pagamentos."
+                        : "Conecte uma conta Stripe para receber diretamente pelas vendas da sua loja."}
                   </p>
+                  {(store.payment?.stripeAccountId ||
+                    Object.keys(store.payment?.stripeAccountIds || {}).length >
+                      0) && (
+                    <small className="stripe-account-status">
+                      {store.payment?.stripeMode === "test"
+                        ? "Ambiente de teste"
+                        : "Ambiente de produção"}
+                      {store.payment?.stripeConnected
+                        ? " · Cobranças liberadas"
+                        : " · Cobranças pendentes"}
+                    </small>
+                  )}
                 </div>
                 <button
                   className="button outline"
@@ -1925,7 +1971,11 @@ function Admin({ user, onLogout }) {
                 >
                   {store.payment?.stripeConnected
                     ? "Gerenciar conexão"
-                    : "Ativar com Stripe"}
+                    : store.payment?.stripeAccountId ||
+                        Object.keys(store.payment?.stripeAccountIds || {})
+                          .length
+                      ? "Concluir cadastro Stripe"
+                      : "Ativar com Stripe"}
                 </button>
               </div>
             </>

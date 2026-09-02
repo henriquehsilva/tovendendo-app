@@ -32,7 +32,11 @@ export default async function (request) {
       account = await stripe.accounts.retrieve(accountId);
     if (!account.charges_enabled)
       return json(409, {
-        error: "A conta de pagamentos desta loja ainda está em análise.",
+        error: account.requirements?.currently_due?.length
+          ? "O cadastro Stripe da loja ainda possui dados pendentes. O lojista deve abrir o painel e concluir a configuração da conta."
+          : account.requirements?.pending_verification?.length
+            ? "A Stripe está verificando os dados desta loja. O pagamento por cartão será liberado após a análise."
+            : "A Stripe ainda não habilitou cobranças nesta conta da loja.",
       });
     const lineItems = [],
       orderItems = [];

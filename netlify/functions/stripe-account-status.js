@@ -40,8 +40,14 @@ export default async function (request) {
     });
     return json(200, {
       connected,
+      accountId,
       chargesEnabled: account.charges_enabled,
       detailsSubmitted: account.details_submitted,
+      payoutsEnabled: account.payouts_enabled,
+      disabledReason: account.requirements?.disabled_reason || "",
+      currentlyDue: account.requirements?.currently_due || [],
+      pendingVerification: account.requirements?.pending_verification || [],
+      cardPaymentsCapability: account.capabilities?.card_payments || "inactive",
       mode: stripeMode,
     });
   } catch (error) {
