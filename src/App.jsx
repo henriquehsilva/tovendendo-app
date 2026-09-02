@@ -11,7 +11,7 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   signOut,
 } from "firebase/auth";
 import {
@@ -362,7 +362,7 @@ function Login({ user }) {
     setGoogleLoading(true);
     setError("");
     try {
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user")
         setError(googleAuthError(err));
