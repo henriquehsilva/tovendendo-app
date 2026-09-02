@@ -38,6 +38,43 @@ const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     Number(value) || 0,
   );
+const storePalettes = [
+  {
+    id: "sky",
+    name: "Azul claro",
+    colors: ["#55b8e8", "#247da9", "#eaf6fc", "#12202d"],
+  },
+  {
+    id: "rose",
+    name: "Rosa suave",
+    colors: ["#f28ba8", "#b73f68", "#fff0f4", "#38202a"],
+  },
+  {
+    id: "terracotta",
+    name: "Terracota",
+    colors: ["#e58b67", "#a84f32", "#fff2eb", "#35231e"],
+  },
+  {
+    id: "violet",
+    name: "Violeta",
+    colors: ["#a78bfa", "#6d4bcc", "#f3efff", "#241d38"],
+  },
+  {
+    id: "graphite",
+    name: "Grafite",
+    colors: ["#93a4ae", "#465b66", "#edf2f4", "#172126"],
+  },
+];
+const paletteStyle = (paletteId) => {
+  const palette =
+    storePalettes.find((option) => option.id === paletteId) || storePalettes[0];
+  return {
+    "--blue": palette.colors[0],
+    "--blue-dark": palette.colors[1],
+    "--pale": palette.colors[2],
+    "--ink": palette.colors[3],
+  };
+};
 const productImages = (product) =>
   product.imageUrls?.length
     ? product.imageUrls
@@ -673,7 +710,7 @@ function StorePage() {
       </main>
     );
   return (
-    <div className="store-page">
+    <div className="store-page" style={paletteStyle(store.palette)}>
       <header className="store-nav">
         <a className="brand" href="#top">
           {store.logoUrl ? <img src={store.logoUrl} /> : <i>●</i>}
@@ -1786,6 +1823,32 @@ function Admin({ user, onLogout }) {
             <>
               <p className="eyebrow">IDENTIDADE</p>
               <h1>Conte sobre sua loja.</h1>
+              <div className="palette-field">
+                <div>
+                  <b>Paleta da loja</b>
+                  <span>Escolha as cores da sua vitrine.</span>
+                </div>
+                <div className="palette-options">
+                  {storePalettes.map((palette) => (
+                    <button
+                      type="button"
+                      key={palette.id}
+                      className={
+                        (store.palette || "sky") === palette.id ? "active" : ""
+                      }
+                      onClick={() => update("palette", palette.id)}
+                      aria-label={`Aplicar paleta ${palette.name}`}
+                    >
+                      <span className="palette-swatches">
+                        {palette.colors.map((color) => (
+                          <i key={color} style={{ background: color }} />
+                        ))}
+                      </span>
+                      <small>{palette.name}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="form-grid">
                 <Field
                   label="Nome da loja"
@@ -2114,7 +2177,7 @@ function AdminPreview({ store, products }) {
     <aside className="live-preview">
       <p className="eyebrow">PREVIEW AO VIVO</p>
       <span>Assim seus clientes verão a loja</span>
-      <div className="preview-phone">
+      <div className="preview-phone" style={paletteStyle(store.palette)}>
         <header>
           {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <i>●</i>}
           <b>{store.brand || "Sua loja"}</b>

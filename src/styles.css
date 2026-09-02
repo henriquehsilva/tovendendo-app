@@ -935,6 +935,61 @@ footer {
   grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
+.palette-field {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 25px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.palette-field > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+.palette-field > div:first-child span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.palette-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.palette-options > button {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #f7fafb;
+  color: var(--ink);
+  cursor: pointer;
+}
+.palette-options > button.active {
+  border-color: var(--blue-dark);
+  box-shadow: 0 0 0 3px var(--pale);
+}
+.palette-options small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.palette-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  height: 34px;
+  overflow: hidden;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px #0000000f;
+}
+.palette-swatches i {
+  display: block;
+}
 .field {
   display: grid;
   gap: 7px;
@@ -1988,6 +2043,9 @@ footer {
   font-weight: 800;
 }
 @media (max-width: 700px) {
+  .palette-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .stripe-connect-card {
     grid-template-columns: 48px 1fr;
   }

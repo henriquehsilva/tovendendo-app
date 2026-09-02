@@ -12,6 +12,7 @@ export const demoStore = {
   instagram: "achadinhosdaana",
   address: "São Paulo · SP",
   hours: "Seg–Sáb · 9h às 18h",
+  palette: "sky",
   categories: [
     { id: "acessorios", name: "Acessórios" },
     { id: "casa", name: "Casa" },
