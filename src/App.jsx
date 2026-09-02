@@ -582,6 +582,7 @@ function StorePage() {
     return () => unsub();
   }, [slug]);
   const visible = products;
+  const purchasable = visible.filter((product) => !productUnavailable(product));
   const allCategories = storeCategories(store, visible);
   const categories = allCategories.filter((category) =>
     visible.some(
@@ -595,8 +596,11 @@ function StorePage() {
           (product) =>
             productCategoryId(product, allCategories) === activeCategory,
         );
-  const count = Object.values(cart).reduce((a, b) => a + b, 0);
-  const total = visible.reduce(
+  const count = purchasable.reduce(
+    (sum, product) => sum + (cart[product.id] || 0),
+    0,
+  );
+  const total = purchasable.reduce(
     (sum, p) => sum + (cart[p.id] || 0) * Number(p.price),
     0,
   );
@@ -636,7 +640,7 @@ function StorePage() {
     }
   };
   const digitalCheckout = async () => {
-    const items = visible
+    const items = purchasable
       .filter((product) => cart[product.id])
       .map((product) => ({ id: product.id, quantity: cart[product.id] }));
     if (!items.length) return;
@@ -796,7 +800,7 @@ function StorePage() {
             </button>
             <p className="eyebrow">SUA COMPRA</p>
             <h2>Revise sua sacola</h2>
-            {visible
+            {purchasable
               .filter((p) => cart[p.id])
               .map((p) => (
                 <div className="cart-row" key={p.id}>
@@ -1149,19 +1153,16 @@ function ProductCard({ store, product, quantity, onChange }) {
           <p>{product.description}</p>
           <div className="product-bottom">
             <b>{money(product.price)}</b>
-            {quantity ? (
+            {productUnavailable(product) ? (
+              <button disabled>Indisponível</button>
+            ) : quantity ? (
               <div className="quantity">
                 <button onClick={() => onChange(product, -1)}>−</button>
                 <span>{quantity}</span>
                 <button onClick={() => onChange(product, 1)}>+</button>
               </div>
             ) : (
-              <button
-                disabled={productUnavailable(product)}
-                onClick={() => onChange(product, 1)}
-              >
-                Adicionar
-              </button>
+              <button onClick={() => onChange(product, 1)}>Adicionar</button>
             )}
           </div>
           {productUnavailable(product) && <em>Indisponível para compra</em>}

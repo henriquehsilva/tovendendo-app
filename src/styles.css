@@ -357,9 +357,24 @@ footer {
   font-size: 0.76rem;
   font-weight: 700;
 }
-.sold-out img {
+.product-card.sold-out {
+  border-color: #c9d0d4;
+  background: #eef1f2;
+}
+.product-card.sold-out img {
   filter: grayscale(1);
-  opacity: 0.7;
+  opacity: 0.55;
+}
+.product-card.sold-out .product-copy > small,
+.product-card.sold-out .product-copy h3,
+.product-card.sold-out .product-copy p,
+.product-card.sold-out .product-bottom > b {
+  color: #78858c;
+}
+.product-card.sold-out .product-bottom > button {
+  background: #9aa5aa;
+  color: #fff;
+  cursor: not-allowed;
 }
 .product-copy {
   padding: 20px;
