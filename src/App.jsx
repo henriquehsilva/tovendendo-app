@@ -21,6 +21,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -42,6 +43,13 @@ const productImages = (product) =>
     : product.imageUrl
       ? [product.imageUrl]
       : ["https://placehold.co/800x600/eaf6fc/247da9?text=Produto"];
+const instagramHandle = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0]
+    .replace(/[^a-zA-Z0-9._]/g, "");
 const slugify = (value) =>
   String(value)
     .normalize("NFD")
@@ -596,10 +604,40 @@ function StorePage() {
           <p className="eyebrow">SOBRE A LOJA</p>
           <h2>{store.brand}</h2>
           <p>{store.description}</p>
-          <div>
+          <div className="about-details">
             <span>⌖ {store.address}</span>
             <span>◷ {store.hours}</span>
-            <a href={`https://wa.me/${store.whatsapp}`}>Falar no WhatsApp</a>
+          </div>
+          <div className="social-actions">
+            <a
+              className="social-button whatsapp"
+              href={`https://wa.me/${String(store.whatsapp || "").replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Conheci a ${store.brand} pelo site e gostaria de mais informações.`)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.3 23.5l5.9-1.6A11.8 11.8 0 0 0 23.8 12c0-3.2-1.2-6.2-3.3-8.5Zm-8.4 18.4c-1.9 0-3.8-.5-5.4-1.5l-.4-.2-3.5.9.9-3.4-.2-.4A9.8 9.8 0 1 1 12 21.9Zm5.4-7.4c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2l-.9 1.1c-.2.2-.3.2-.6.1-1.8-.9-3-1.6-4.2-3.7-.3-.5.3-.5.9-1.7.1-.2 0-.4 0-.6l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.4-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.4 3.7 5.9 5.2 2.2.9 3.1 1 4.2.8.7-.1 1.8-.7 2.1-1.5.3-.7.3-1.4.2-1.5-.2-.3-.5-.4-.8-.5Z" />
+              </svg>
+              <span>
+                <small>ATENDIMENTO</small>Falar no WhatsApp
+              </span>
+            </a>
+            {instagramHandle(store.instagram) && (
+              <a
+                className="social-button instagram"
+                href={`https://instagram.com/${instagramHandle(store.instagram)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9Zm9.25 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+                </svg>
+                <span>
+                  <small>SIGA NO INSTAGRAM</small>@
+                  {instagramHandle(store.instagram)}
+                </span>
+              </a>
+            )}
           </div>
         </section>
       </main>
@@ -832,6 +870,9 @@ function Admin({ user, onLogout }) {
           : doc(collection(db, "stores"));
         const { id: ignoredStoreId, ...storeData } = normalized;
         await setDoc(storeRef, storeData, { merge: true });
+        const savedStore = await getDoc(storeRef);
+        if (!savedStore.exists())
+          throw new Error("O Firestore não confirmou a criação da loja.");
         for (const p of products) {
           const productId = p.id || crypto.randomUUID();
           const { id: ignoredProductId, ...productData } = p;
@@ -841,7 +882,7 @@ function Admin({ user, onLogout }) {
             { merge: true },
           );
         }
-        setStore({ ...normalized, id: storeRef.id });
+        setStore({ id: storeRef.id, ...savedStore.data() });
       } else {
         saveLocal(
           { ...normalized, updatedAt: new Date().toISOString() },
@@ -1043,6 +1084,12 @@ function Admin({ user, onLogout }) {
                   label="WhatsApp com DDI"
                   value={store.whatsapp}
                   onChange={(v) => update("whatsapp", v)}
+                />
+                <Field
+                  label="Usuário do Instagram"
+                  value={store.instagram}
+                  onChange={(v) => update("instagram", instagramHandle(v))}
+                  prefix="@"
                 />
                 <Field
                   label="Localização"

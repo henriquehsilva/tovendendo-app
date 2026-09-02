@@ -4,6 +4,11 @@ export const handler = async (event) => {
   if (event.httpMethod !== "POST")
     return json(405, { error: "Método não permitido." });
   try {
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64)
+      return json(503, {
+        error:
+          "Configure FIREBASE_SERVICE_ACCOUNT_BASE64 nas variáveis da Netlify antes de conectar uma conta.",
+      });
     const admin = firebaseAdmin();
     const idToken = String(event.headers.authorization || "").replace(
       /^Bearer\s+/i,
