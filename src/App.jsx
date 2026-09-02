@@ -1288,10 +1288,10 @@ function ProductCard({ store, product, quantity, onChange }) {
                     src={images[Math.min(current, images.length - 1)]}
                     alt=""
                     style={{
-                      width: `${zoom.width * 3}px`,
-                      height: `${zoom.height * 3}px`,
-                      left: `${90 - zoom.pixelX * 3}px`,
-                      top: `${90 - zoom.pixelY * 3}px`,
+                      width: `${zoom.width * 1.5}px`,
+                      height: `${zoom.height * 1.5}px`,
+                      left: `${90 - zoom.pixelX * 1.5}px`,
+                      top: `${90 - zoom.pixelY * 1.5}px`,
                     }}
                   />
                 </span>
