@@ -1045,7 +1045,11 @@ function ProductCard({ store, product, quantity, onChange }) {
   const share = async () => {
     if (sharing) return;
     setSharing(true);
-    const previewUrl = `${location.origin}/loja/${store.slug}/produto/${product.id}`;
+    const imageVersion =
+      new URL(images[0], location.origin).searchParams
+        .get("token")
+        ?.slice(0, 8) || product.id.slice(0, 8);
+    const previewUrl = `${location.origin}/loja/${store.slug}/produto/${product.id}?foto=${imageVersion}`;
     const message = [
       `Olha este item da ${store.brand}:`,
       `*${product.name}*`,

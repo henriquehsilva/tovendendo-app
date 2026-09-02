@@ -49,7 +49,10 @@ export default async function (request) {
     const store = storeSnap.data();
     const product = productSnap.data();
     const resolvedStoreId = storeRef.id;
-    const imageVersion = url.searchParams.get("v") || productId.slice(0, 8);
+    const imageVersion =
+      url.searchParams.get("foto") ||
+      url.searchParams.get("v") ||
+      productId.slice(0, 8);
     const socialImage = `${process.env.APP_URL || url.origin}/.netlify/functions/product-share-image?${new URLSearchParams({ storeId: resolvedStoreId, productId, v: imageVersion })}`;
     const destination = `${process.env.APP_URL || url.origin}/loja/${store.slug}#produto-${productId}`;
     const price = new Intl.NumberFormat("pt-BR", {
@@ -59,7 +62,7 @@ export default async function (request) {
     const title = `${product.name} · ${price}`;
     const description =
       product.description || `Confira este item da ${store.brand}.`;
-    const publicUrl = `${process.env.APP_URL || url.origin}/loja/${store.slug}/produto/${productId}`;
+    const publicUrl = `${process.env.APP_URL || url.origin}/loja/${store.slug}/produto/${productId}?foto=${encodeURIComponent(imageVersion)}`;
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta property="og:type" content="product"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:image" content="${escapeHtml(socialImage)}"><meta property="og:image:secure_url" content="${escapeHtml(socialImage)}"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:site_name" content="${escapeHtml(store.brand)}"><meta property="og:url" content="${escapeHtml(publicUrl)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(socialImage)}"><link rel="canonical" href="${escapeHtml(destination)}"></head><body><p>Abrindo <a href="${escapeHtml(destination)}">${escapeHtml(product.name)}</a>…</p><script>window.location.replace(${JSON.stringify(destination)})</script></body></html>`;
     return new Response(html, {
       headers: {
