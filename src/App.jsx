@@ -25,7 +25,8 @@ import {
   setDoc,
   where,
 } from "firebase/firestore";
-import { auth, db, firebaseEnabled, googleProvider } from "./firebase";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { auth, db, firebaseEnabled, googleProvider, storage } from "./firebase";
 import { demoProducts, demoStore, emptyStore } from "./data";
 
 const money = (value) =>
@@ -734,6 +735,27 @@ function Admin({ user, onLogout }) {
   const update = (key, value) => setStore((s) => ({ ...s, [key]: value }));
   const updatePayment = (key, value) =>
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
+  const uploadImage = async (file, folder) => {
+    if (!file?.type.startsWith("image/"))
+      throw new Error("Escolha um arquivo de imagem válido.");
+    if (file.size > 8 * 1024 * 1024)
+      throw new Error("A imagem deve ter no máximo 8 MB.");
+    if (!firebaseEnabled)
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () =>
+          reject(new Error("Não foi possível ler a imagem."));
+        reader.readAsDataURL(file);
+      });
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const imageRef = ref(
+      storage,
+      `stores/${user.uid}/${folder}/${crypto.randomUUID()}.${extension}`,
+    );
+    await uploadBytes(imageRef, file, { contentType: file.type });
+    return getDownloadURL(imageRef);
+  };
   const save = async () => {
     const normalized = {
       ...store,
@@ -868,10 +890,20 @@ function Admin({ user, onLogout }) {
                   value={store.tagline}
                   onChange={(v) => update("tagline", v)}
                 />
-                <Field
-                  label="Imagem de capa (URL)"
+                <ImageUpload
+                  label="Logo da loja"
+                  hint="PNG, JPG ou WebP · até 8 MB"
+                  value={store.logoUrl}
+                  onUpload={(file) => uploadImage(file, "logo")}
+                  onChange={(url) => update("logoUrl", url)}
+                />
+                <ImageUpload
+                  wide
+                  label="Imagem de capa"
+                  hint="Recomendado: imagem horizontal · até 8 MB"
                   value={store.heroImage}
-                  onChange={(v) => update("heroImage", v)}
+                  onUpload={(file) => uploadImage(file, "cover")}
+                  onChange={(url) => update("heroImage", url)}
                 />
                 <Field
                   area
@@ -934,10 +966,14 @@ function Admin({ user, onLogout }) {
                         value={p.description}
                         onChange={(v) => changeProduct(p.id, "description", v)}
                       />
-                      <Field
-                        label="URL da imagem"
+                      <ImageUpload
+                        label="Foto do produto"
+                        hint="PNG, JPG ou WebP · até 8 MB"
                         value={p.imageUrl}
-                        onChange={(v) => changeProduct(p.id, "imageUrl", v)}
+                        onUpload={(file) =>
+                          uploadImage(file, `products/${p.id}`)
+                        }
+                        onChange={(url) => changeProduct(p.id, "imageUrl", url)}
                       />
                       <div className="inline-fields">
                         <Field
@@ -1098,6 +1134,55 @@ function Field({ label, value, onChange, area, type = "text", prefix }) {
         )}
       </div>
     </label>
+  );
+}
+function ImageUpload({ label, hint, value, onUpload, onChange, wide }) {
+  const [status, setStatus] = useState("");
+  const select = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setStatus("Enviando imagem…");
+    try {
+      const url = await onUpload(file);
+      onChange(url);
+      setStatus("Upload concluído ✓");
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+  return (
+    <div className={`image-upload ${wide ? "wide" : ""}`}>
+      <span>{label}</span>
+      <div className="image-upload-box">
+        {value ? (
+          <img src={value} alt={`Prévia: ${label}`} />
+        ) : (
+          <div className="image-placeholder">▧</div>
+        )}
+        <div>
+          <label className="upload-button">
+            Escolher imagem
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={select}
+            />
+          </label>
+          <small>{status || hint}</small>
+          {value && (
+            <button
+              type="button"
+              className="remove-image"
+              onClick={() => onChange("")}
+            >
+              Remover imagem
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
