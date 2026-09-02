@@ -6,6 +6,12 @@
   directory = "netlify/functions"
 
 [[redirects]]
+  from = "/loja/:slug/produto/:productId"
+  to = "/.netlify/functions/product-preview?slug=:slug&productId=:productId"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
