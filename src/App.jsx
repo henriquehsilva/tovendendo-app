@@ -44,6 +44,8 @@ const productImages = (product) =>
     : product.imageUrl
       ? [product.imageUrl]
       : ["https://placehold.co/800x600/eaf6fc/247da9?text=Produto"];
+const productUnavailable = (product) =>
+  product.unavailable === true || product.active === false;
 const instagramHandle = (value) =>
   String(value || "")
     .trim()
@@ -181,8 +183,8 @@ function Landing() {
             <p className="eyebrow">SITE PARA QUEM VENDE</p>
             <h1>Sua loja online, bonita e pronta para vender.</h1>
             <p>
-              Publique produtos variados, acompanhe o estoque e receba direto na
-              sua chave Pix.
+              Publique produtos variados, controle a disponibilidade e receba
+              direto na sua chave Pix.
             </p>
             <Link className="button primary" to="/admin">
               Testar grátis por 30 dias
@@ -193,7 +195,7 @@ function Landing() {
         </section>
         <section className="benefits">
           <span>◉ Link exclusivo para sua loja</span>
-          <span>▣ Estoque sob controle</span>
+          <span>▣ Disponibilidade sob controle</span>
           <span>↗ Pagamento por QR Code Pix</span>
         </section>
         <section className="how">
@@ -207,8 +209,8 @@ function Landing() {
             </article>
             <article>
               <b>02</b>
-              <h3>Controle o estoque</h3>
-              <p>Veja quantidades e bloqueie itens esgotados.</p>
+              <h3>Controle a disponibilidade</h3>
+              <p>Marque os itens que não estão disponíveis para compra.</p>
             </article>
             <article>
               <b>03</b>
@@ -248,7 +250,7 @@ function Plans({ onPro }) {
           <ul>
             <li>✓ Loja e link exclusivos</li>
             <li>✓ Cadastro de produtos</li>
-            <li>✓ Controle de estoque</li>
+            <li>✓ Controle de disponibilidade</li>
             <li>✓ Pedidos pelo WhatsApp</li>
           </ul>
           <p className="plan-note">
@@ -267,7 +269,7 @@ function Plans({ onPro }) {
             <li>✓ Tudo do período de teste</li>
             <li>✓ QR Code Pix por loja</li>
             <li>✓ Código Pix copia e cola</li>
-            <li>✓ Gestão contínua de estoque</li>
+            <li>✓ Gestão de disponibilidade</li>
             <li>✓ Suporte de configuração</li>
           </ul>
           <p className="plan-note">
@@ -579,7 +581,7 @@ function StorePage() {
     });
     return () => unsub();
   }, [slug]);
-  const visible = products.filter((x) => x.active !== false);
+  const visible = products;
   const allCategories = storeCategories(store, visible);
   const categories = allCategories.filter((category) =>
     visible.some(
@@ -601,10 +603,7 @@ function StorePage() {
   const change = (p, delta) =>
     setCart((c) => ({
       ...c,
-      [p.id]: Math.max(
-        0,
-        Math.min(Number(p.stock) || 0, (c[p.id] || 0) + delta),
-      ),
+      [p.id]: productUnavailable(p) ? 0 : Math.max(0, (c[p.id] || 0) + delta),
     }));
   const checkout = async () => {
     if (!count) return;
@@ -1107,7 +1106,7 @@ function ProductCard({ store, product, quantity, onChange }) {
     <>
       <article
         id={`produto-${product.id}`}
-        className={`product-card ${product.stock < 1 ? "sold-out" : ""}`}
+        className={`product-card ${productUnavailable(product) ? "sold-out" : ""}`}
       >
         <div className="product-photo">
           <img
@@ -1142,7 +1141,7 @@ function ProductCard({ store, product, quantity, onChange }) {
               </div>
             </>
           )}
-          {product.stock < 1 && <span>Esgotado</span>}
+          {productUnavailable(product) && <span>Indisponível</span>}
         </div>
         <div className="product-copy">
           <small>{product.category || "Produto"}</small>
@@ -1158,16 +1157,14 @@ function ProductCard({ store, product, quantity, onChange }) {
               </div>
             ) : (
               <button
-                disabled={product.stock < 1}
+                disabled={productUnavailable(product)}
                 onClick={() => onChange(product, 1)}
               >
                 Adicionar
               </button>
             )}
           </div>
-          <em>
-            {product.stock > 0 ? `${product.stock} em estoque` : "Indisponível"}
-          </em>
+          {productUnavailable(product) && <em>Indisponível para compra</em>}
           <div className="product-social">
             <button
               className={liked ? "liked" : ""}
@@ -1605,7 +1602,7 @@ function Admin({ user, onLogout }) {
         categoryId: categories[0].id,
         description: "",
         price: 0,
-        stock: 0,
+        unavailable: false,
         active: true,
         imageUrl: "",
         imageUrls: [],
@@ -1858,7 +1855,7 @@ function Admin({ user, onLogout }) {
                           changeProduct(p.id, "imageUrls", urls)
                         }
                       />
-                      <div className="inline-fields">
+                      <div>
                         <CurrencyField
                           label="Preço"
                           value={p.price}
@@ -1866,24 +1863,21 @@ function Admin({ user, onLogout }) {
                             changeProduct(p.id, "price", value)
                           }
                         />
-                        <Field
-                          type="number"
-                          label="Estoque"
-                          value={p.stock}
-                          onChange={(v) =>
-                            changeProduct(p.id, "stock", Math.max(0, Number(v)))
-                          }
-                        />
                       </div>
                       <label className="check">
                         <input
                           type="checkbox"
-                          checked={p.active}
-                          onChange={(e) =>
-                            changeProduct(p.id, "active", e.target.checked)
-                          }
+                          checked={productUnavailable(p)}
+                          onChange={(e) => {
+                            changeProduct(
+                              p.id,
+                              "unavailable",
+                              e.target.checked,
+                            );
+                            changeProduct(p.id, "active", true);
+                          }}
                         />{" "}
-                        Exibir na loja
+                        Indisponível
                       </label>
                       <button className="danger" onClick={() => remove(p)}>
                         Excluir produto
@@ -2025,9 +2019,7 @@ function Admin({ user, onLogout }) {
   );
 }
 function AdminPreview({ store, products }) {
-  const visible = products
-    .filter((product) => product.active !== false)
-    .slice(0, 4);
+  const visible = products.slice(0, 4);
   return (
     <aside className="live-preview">
       <p className="eyebrow">PREVIEW AO VIVO</p>
@@ -2058,9 +2050,9 @@ function AdminPreview({ store, products }) {
                   <b>{product.name}</b>
                   <span>{money(product.price)}</span>
                   <small>
-                    {product.stock > 0
-                      ? `${product.stock} em estoque`
-                      : "Esgotado"}
+                    {productUnavailable(product)
+                      ? "Indisponível"
+                      : "Disponível"}
                   </small>
                 </div>
               </article>

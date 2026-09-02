@@ -46,14 +46,8 @@ export default async function (request) {
           .get(),
         data = product.data(),
         quantity = Math.max(1, Math.floor(Number(requested.quantity)));
-      if (
-        !product.exists ||
-        data.active === false ||
-        Number(data.stock) < quantity
-      )
-        throw new Error(
-          `Estoque insuficiente para ${data?.name || "um produto"}.`,
-        );
+      if (!product.exists || data.unavailable === true || data.active === false)
+        throw new Error(`${data?.name || "Um produto"} está indisponível.`);
       lineItems.push({
         quantity,
         price_data: {

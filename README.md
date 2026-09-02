@@ -1,6 +1,6 @@
 # Tô Vendendo
 
-Gerador de lojas virtuais para produtos variados. Cada lojista personaliza a vitrine, controla o estoque e configura sua própria chave Pix para receber pagamentos diretamente.
+Gerador de lojas virtuais para produtos variados. Cada lojista personaliza a vitrine, controla a disponibilidade dos itens e configura sua própria chave Pix para receber pagamentos diretamente.
 
 ## Desenvolvimento
 

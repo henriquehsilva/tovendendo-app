@@ -26,11 +26,6 @@ export default async function (request) {
         paymentIntentId: session.payment_intent,
         paidAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      for (const item of order.data().items)
-        transaction.update(
-          firestore.doc(`stores/${storeId}/products/${item.productId}`),
-          { stock: admin.firestore.FieldValue.increment(-item.quantity) },
-        );
     });
     return json(200, { received: true });
   } catch (error) {
