@@ -1128,13 +1128,7 @@ function ProductCard({ store, product, quantity, onChange }) {
         id={`produto-${product.id}`}
         className={`product-card ${productUnavailable(product) ? "sold-out" : ""}`}
       >
-        <div
-          className="product-photo"
-          onMouseMove={moveZoom}
-          onMouseLeave={() =>
-            setZoom((value) => ({ ...value, visible: false }))
-          }
-        >
+        <div className="product-photo">
           <img
             src={images[Math.min(current, images.length - 1)]}
             alt={`${product.name} — foto ${current + 1}`}
@@ -1150,18 +1144,6 @@ function ProductCard({ store, product, quantity, onChange }) {
               <path d="m16 16 5 5M8 11h6M11 8v6" />
             </svg>
           </button>
-          {zoom.visible && (
-            <span
-              className="zoom-lens"
-              aria-hidden="true"
-              style={{
-                left: `${zoom.x}%`,
-                top: `${zoom.y}%`,
-                backgroundImage: `url(${images[Math.min(current, images.length - 1)]})`,
-                backgroundPosition: `${zoom.x}% ${zoom.y}%`,
-              }}
-            />
-          )}
           {images.length > 1 && (
             <>
               <button
@@ -1270,10 +1252,30 @@ function ProductCard({ store, product, quantity, onChange }) {
             <button className="modal-close" onClick={() => setZoomOpen(false)}>
               ×
             </button>
-            <img
-              src={images[Math.min(current, images.length - 1)]}
-              alt={`${product.name} ampliado`}
-            />
+            <div
+              className="zoom-stage"
+              onMouseMove={moveZoom}
+              onMouseLeave={() =>
+                setZoom((value) => ({ ...value, visible: false }))
+              }
+            >
+              <img
+                src={images[Math.min(current, images.length - 1)]}
+                alt={`${product.name} ampliado`}
+              />
+              {zoom.visible && (
+                <span
+                  className="zoom-lens"
+                  aria-hidden="true"
+                  style={{
+                    left: `${zoom.x}%`,
+                    top: `${zoom.y}%`,
+                    backgroundImage: `url(${images[Math.min(current, images.length - 1)]})`,
+                    backgroundPosition: `${zoom.x}% ${zoom.y}%`,
+                  }}
+                />
+              )}
+            </div>
             <p>{product.name}</p>
           </section>
         </div>
