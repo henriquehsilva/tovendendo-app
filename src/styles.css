@@ -1964,21 +1964,23 @@ footer {
   margin-top: 25px;
 }
 .social-actions {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(220px, 300px));
-  gap: 12px !important;
-  margin-top: 30px !important;
+  display: flex !important;
+  gap: 8px !important;
+  margin-top: 22px !important;
 }
 .social-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 13px;
-  min-height: 64px;
-  padding: 10px 18px;
-  border-radius: 10px;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--blue-dark) !important;
   color: #fff !important;
   font-weight: 700;
-  box-shadow: 0 8px 18px #17394d24;
+  font-size: 0.82rem;
+  box-shadow: 0 5px 12px #17394d20;
   transition:
     transform 0.2s,
     box-shadow 0.2s;
@@ -1988,40 +1990,20 @@ footer {
   box-shadow: 0 12px 24px #17394d35;
 }
 .social-button svg {
-  width: 29px;
-  height: 29px;
-  flex: 0 0 29px;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
   fill: currentColor;
 }
 .social-button span {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
-.social-button small {
-  margin-bottom: 4px;
-  font-size: 0.6rem;
-  letter-spacing: 0.11em;
-  opacity: 0.82;
-}
-.social-button.whatsapp {
-  background: linear-gradient(135deg, #20b858, #128c4a);
-}
-.social-button.instagram {
-  background: linear-gradient(
-    125deg,
-    #515bd4,
-    #8134af 38%,
-    #dd2a7b 70%,
-    #f58529
-  );
+  line-height: 1;
 }
 @media (max-width: 600px) {
   .social-actions {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
   }
   .social-button {
-    max-width: none;
+    flex: 1;
   }
 }
 .oauth-explanation {
