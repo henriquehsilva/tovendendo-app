@@ -693,6 +693,8 @@ function Admin({ user, onLogout }) {
   const [products, setProducts] = useState([]);
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [mercadoPagoToken, setMercadoPagoToken] = useState("");
   const [loadError, setLoadError] = useState("");
   useEffect(() => {
     if (!user) return;
@@ -756,37 +758,61 @@ function Admin({ user, onLogout }) {
     await uploadBytes(imageRef, file, { contentType: file.type });
     return getDownloadURL(imageRef);
   };
-  const save = async () => {
+  const save = async (overrides = {}) => {
+    setSaving(true);
+    setSaved("");
     const normalized = {
       ...store,
+      ...overrides,
       slug: store.slug || slugify(store.brand),
       ownerId: user.uid,
       updatedAt: serverTimestamp(),
     };
-    if (firebaseEnabled) {
-      const ref = store.id
-        ? doc(db, "stores", store.id)
-        : doc(collection(db, "stores"));
-      const { id: ignoredStoreId, ...storeData } = normalized;
-      await setDoc(ref, storeData, { merge: true });
-      for (const p of products) {
-        const { id: ignoredProductId, ...productData } = p;
-        await setDoc(
-          doc(db, "stores", ref.id, "products", p.id || crypto.randomUUID()),
-          productData,
-          { merge: true },
+    if (!normalized.brand.trim() || !normalized.slug)
+      return void (setSaved(
+        "Informe o nome e o endereço da loja antes de salvar.",
+      ),
+      setSaving(false));
+    try {
+      if (firebaseEnabled) {
+        const storeRef = store.id
+          ? doc(db, "stores", store.id)
+          : doc(collection(db, "stores"));
+        const { id: ignoredStoreId, ...storeData } = normalized;
+        await setDoc(storeRef, storeData, { merge: true });
+        for (const p of products) {
+          const productId = p.id || crypto.randomUUID();
+          const { id: ignoredProductId, ...productData } = p;
+          await setDoc(
+            doc(db, "stores", storeRef.id, "products", productId),
+            productData,
+            { merge: true },
+          );
+        }
+        setStore({ ...normalized, id: storeRef.id });
+      } else {
+        saveLocal(
+          { ...normalized, updatedAt: new Date().toISOString() },
+          products,
         );
+        setStore(normalized);
       }
-      setStore({ ...normalized, id: ref.id });
-    } else {
-      saveLocal(
-        { ...normalized, updatedAt: new Date().toISOString() },
-        products,
+      setSaved(
+        overrides.published
+          ? "Loja publicada com sucesso ✓"
+          : "Alterações salvas ✓",
       );
-      setStore(normalized);
+      setTimeout(() => setSaved(""), 3500);
+    } catch (error) {
+      console.error("Falha ao salvar loja:", error);
+      setSaved(
+        error.code === "permission-denied"
+          ? "Sem permissão para salvar. Saia, entre novamente e confirme se as regras do Firestore foram publicadas."
+          : `Não foi possível salvar: ${error.message}`,
+      );
+    } finally {
+      setSaving(false);
     }
-    setSaved("Alterações salvas ✓");
-    setTimeout(() => setSaved(""), 2500);
   };
   const connect = async () => {
     if (!firebaseEnabled || !store.id) {
@@ -803,11 +829,55 @@ function Admin({ user, onLogout }) {
         },
         body: JSON.stringify({ storeId: store.id }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error);
       location.href = data.authorizationUrl;
     } catch (err) {
       setSaved(err.message);
+    }
+  };
+  const connectWithToken = async () => {
+    if (!store.id) {
+      setSaved("Salve a loja antes de conectar o Mercado Pago.");
+      return;
+    }
+    if (!mercadoPagoToken.trim()) {
+      setSaved("Informe o Access Token da conta Mercado Pago da loja.");
+      return;
+    }
+    setSaving(true);
+    setSaved("");
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/.netlify/functions/mercadopago-token", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          storeId: store.id,
+          accessToken: mercadoPagoToken.trim(),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.error || "Não foi possível validar a credencial.");
+      setStore((current) => ({
+        ...current,
+        payment: {
+          ...current.payment,
+          connected: true,
+          enabled: true,
+          merchantUserId: data.merchantUserId,
+        },
+      }));
+      setMercadoPagoToken("");
+      setSaved("Mercado Pago conectado com sucesso ✓");
+    } catch (error) {
+      setSaved(error.message);
+    } finally {
+      setSaving(false);
     }
   };
   const add = () => {
@@ -1042,6 +1112,33 @@ function Admin({ user, onLogout }) {
                     : "Conectar Mercado Pago"}
                 </button>
               </div>
+              {!store.payment?.connected && (
+                <div className="token-connection">
+                  <label>
+                    <span>Access Token da conta da loja</span>
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      placeholder="APP_USR-... ou TEST-..."
+                      value={mercadoPagoToken}
+                      onChange={(event) =>
+                        setMercadoPagoToken(event.target.value)
+                      }
+                    />
+                  </label>
+                  <button
+                    className="button primary"
+                    disabled={saving}
+                    onClick={connectWithToken}
+                  >
+                    {saving ? "Validando…" : "Conectar com Access Token"}
+                  </button>
+                  <small>
+                    A credencial é validada e enviada diretamente ao servidor.
+                    Ela nunca é exibida novamente.
+                  </small>
+                </div>
+              )}
               <label className="switch">
                 <input
                   type="checkbox"
@@ -1099,17 +1196,84 @@ function Admin({ user, onLogout }) {
                   {store.slug || slugify(store.brand) || "sua-loja"}
                 </strong>
               </div>
+              <button
+                className="button primary publish-button"
+                disabled={saving}
+                onClick={() => save({ published: true })}
+              >
+                {saving ? "Publicando…" : "Publicar loja agora"}
+              </button>
             </>
           )}
           <div className="editor-actions">
-            <button className="button primary" onClick={save}>
-              Salvar alterações
+            <button
+              className="button primary"
+              disabled={saving}
+              onClick={() => save()}
+            >
+              {saving ? "Salvando…" : "Salvar alterações"}
             </button>
             {saved && <span>{saved}</span>}
           </div>
         </main>
+        <AdminPreview store={store} products={products} />
       </div>
     </div>
+  );
+}
+function AdminPreview({ store, products }) {
+  const visible = products
+    .filter((product) => product.active !== false)
+    .slice(0, 4);
+  return (
+    <aside className="live-preview">
+      <p className="eyebrow">PREVIEW AO VIVO</p>
+      <span>Assim seus clientes verão a loja</span>
+      <div className="preview-phone">
+        <header>
+          {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <i>●</i>}
+          <b>{store.brand || "Sua loja"}</b>
+        </header>
+        <div
+          className="preview-cover"
+          style={{
+            backgroundImage: `linear-gradient(90deg,#102535ba,#10253533),url(${store.heroImage || demoStore.heroImage})`,
+          }}
+        >
+          <small>COMPRE ONLINE</small>
+          <strong>
+            {store.tagline || "Sua frase principal aparece aqui."}
+          </strong>
+        </div>
+        <div className="preview-products">
+          <h3>Produtos</h3>
+          {visible.length ? (
+            visible.map((product) => (
+              <article key={product.id}>
+                <img
+                  src={
+                    product.imageUrl ||
+                    "https://placehold.co/90/eaf6fc/247da9?text=Foto"
+                  }
+                  alt=""
+                />
+                <div>
+                  <b>{product.name}</b>
+                  <span>{money(product.price)}</span>
+                  <small>
+                    {product.stock > 0
+                      ? `${product.stock} em estoque`
+                      : "Esgotado"}
+                  </small>
+                </div>
+              </article>
+            ))
+          ) : (
+            <p>Adicione produtos para preencher sua vitrine.</p>
+          )}
+        </div>
+      </div>
+    </aside>
   );
 }
 function Field({ label, value, onChange, area, type = "text", prefix }) {
