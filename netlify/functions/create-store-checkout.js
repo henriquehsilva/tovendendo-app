@@ -1,11 +1,11 @@
 import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
 
-export const handler = async (event) => {
-  if (event.httpMethod !== "POST")
+export default async function (request) {
+  if (request.method !== "POST")
     return json(405, { error: "Método não permitido." });
   try {
-    const { storeId, items } = JSON.parse(event.body || "{}");
+    const { storeId, items } = await request.json();
     if (!storeId || !Array.isArray(items) || !items.length)
       return json(400, { error: "Sacola inválida." });
     const admin = firebaseAdmin(),
@@ -69,7 +69,7 @@ export const handler = async (event) => {
       provider: "stripe",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    const origin = process.env.APP_URL || event.headers.origin;
+    const origin = process.env.APP_URL || request.headers.get("origin");
     const session = await stripe.checkout.sessions.create(
       {
         mode: "payment",
@@ -89,4 +89,4 @@ export const handler = async (event) => {
       error: error.message || "Não foi possível abrir o pagamento.",
     });
   }
-};
+}

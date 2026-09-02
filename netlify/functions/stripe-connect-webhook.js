@@ -1,12 +1,12 @@
 import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
 
-export const handler = async (event) => {
+export default async function (request) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    const signature = event.headers["stripe-signature"];
+    const signature = request.headers.get("stripe-signature");
     const stripeEvent = stripe.webhooks.constructEvent(
-      event.body,
+      await request.text(),
       signature,
       process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
     );
@@ -37,4 +37,4 @@ export const handler = async (event) => {
     console.error(error);
     return json(400, { error: "Webhook inválido." });
   }
-};
+}

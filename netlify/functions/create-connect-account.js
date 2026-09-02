@@ -1,8 +1,8 @@
 import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
 
-export const handler = async (event) => {
-  if (event.httpMethod !== "POST")
+export default async function (request) {
+  if (request.method !== "POST")
     return json(405, { error: "Método não permitido." });
   try {
     if (
@@ -15,12 +15,12 @@ export const handler = async (event) => {
       });
     const admin = firebaseAdmin(),
       firestore = admin.firestore();
-    const idToken = String(event.headers.authorization || "").replace(
+    const idToken = String(request.headers.get("authorization") || "").replace(
       /^Bearer\s+/i,
       "",
     );
     const user = await admin.auth().verifyIdToken(idToken);
-    const { storeId } = JSON.parse(event.body || "{}");
+    const { storeId } = await request.json();
     const storeRef = firestore.doc(`stores/${storeId}`),
       storeSnap = await storeRef.get();
     if (!storeSnap.exists || storeSnap.data().ownerId !== user.uid)
@@ -58,7 +58,7 @@ export const handler = async (event) => {
       const login = await stripe.accounts.createLoginLink(accountId);
       return json(200, { onboardingUrl: login.url, connected: true });
     }
-    const origin = process.env.APP_URL || event.headers.origin;
+    const origin = process.env.APP_URL || request.headers.get("origin");
     const link = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${origin}/admin?stripe=refresh`,
@@ -72,4 +72,4 @@ export const handler = async (event) => {
       error: error.message || "Não foi possível abrir o cadastro Stripe.",
     });
   }
-};
+}

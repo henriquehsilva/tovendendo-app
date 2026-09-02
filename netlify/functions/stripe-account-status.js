@@ -1,18 +1,18 @@
 import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
 
-export const handler = async (event) => {
-  if (event.httpMethod !== "POST")
+export default async function (request) {
+  if (request.method !== "POST")
     return json(405, { error: "Método não permitido." });
   try {
     const admin = firebaseAdmin(),
       firestore = admin.firestore();
-    const token = String(event.headers.authorization || "").replace(
+    const token = String(request.headers.get("authorization") || "").replace(
       /^Bearer\s+/i,
       "",
     );
     const user = await admin.auth().verifyIdToken(token);
-    const { storeId } = JSON.parse(event.body || "{}");
+    const { storeId } = await request.json();
     const storeRef = firestore.doc(`stores/${storeId}`),
       snap = await storeRef.get();
     if (!snap.exists || snap.data().ownerId !== user.uid)
@@ -37,4 +37,4 @@ export const handler = async (event) => {
   } catch (error) {
     return json(500, { error: error.message });
   }
-};
+}
