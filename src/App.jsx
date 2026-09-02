@@ -36,6 +36,12 @@ const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     Number(value) || 0,
   );
+const productImages = (product) =>
+  product.imageUrls?.length
+    ? product.imageUrls
+    : product.imageUrl
+      ? [product.imageUrl]
+      : ["https://placehold.co/800x600/eaf6fc/247da9?text=Produto"];
 const slugify = (value) =>
   String(value)
     .normalize("NFD")
@@ -576,47 +582,13 @@ function StorePage() {
             <span>{visible.length} itens</span>
           </div>
           <div className="product-grid">
-            {visible.map((p) => (
-              <article
-                className={`product-card ${p.stock < 1 ? "sold-out" : ""}`}
-                key={p.id}
-              >
-                <div className="product-photo">
-                  <img
-                    src={
-                      p.imageUrl ||
-                      "https://placehold.co/800x600/eaf6fc/247da9?text=Produto"
-                    }
-                    alt={p.name}
-                  />
-                  {p.stock < 1 && <span>Esgotado</span>}
-                </div>
-                <div className="product-copy">
-                  <small>{p.category || "Produto"}</small>
-                  <h3>{p.name}</h3>
-                  <p>{p.description}</p>
-                  <div className="product-bottom">
-                    <b>{money(p.price)}</b>
-                    {cart[p.id] ? (
-                      <div className="quantity">
-                        <button onClick={() => change(p, -1)}>−</button>
-                        <span>{cart[p.id]}</span>
-                        <button onClick={() => change(p, 1)}>+</button>
-                      </div>
-                    ) : (
-                      <button
-                        disabled={p.stock < 1}
-                        onClick={() => change(p, 1)}
-                      >
-                        Adicionar
-                      </button>
-                    )}
-                  </div>
-                  <em>
-                    {p.stock > 0 ? `${p.stock} em estoque` : "Indisponível"}
-                  </em>
-                </div>
-              </article>
+            {visible.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                quantity={cart[product.id] || 0}
+                onChange={change}
+              />
             ))}
           </div>
         </section>
@@ -695,6 +667,76 @@ function StorePage() {
         </div>
       )}
     </div>
+  );
+}
+function ProductCard({ product, quantity, onChange }) {
+  const images = productImages(product);
+  const [current, setCurrent] = useState(0);
+  const move = (direction) =>
+    setCurrent((index) => (index + direction + images.length) % images.length);
+  return (
+    <article className={`product-card ${product.stock < 1 ? "sold-out" : ""}`}>
+      <div className="product-photo">
+        <img
+          src={images[Math.min(current, images.length - 1)]}
+          alt={`${product.name} — foto ${current + 1}`}
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              className="carousel-prev"
+              aria-label="Foto anterior"
+              onClick={() => move(-1)}
+            >
+              ‹
+            </button>
+            <button
+              className="carousel-next"
+              aria-label="Próxima foto"
+              onClick={() => move(1)}
+            >
+              ›
+            </button>
+            <div className="carousel-dots">
+              {images.map((_, index) => (
+                <button
+                  key={index}
+                  aria-label={`Ver foto ${index + 1}`}
+                  className={index === current ? "active" : ""}
+                  onClick={() => setCurrent(index)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {product.stock < 1 && <span>Esgotado</span>}
+      </div>
+      <div className="product-copy">
+        <small>{product.category || "Produto"}</small>
+        <h3>{product.name}</h3>
+        <p>{product.description}</p>
+        <div className="product-bottom">
+          <b>{money(product.price)}</b>
+          {quantity ? (
+            <div className="quantity">
+              <button onClick={() => onChange(product, -1)}>−</button>
+              <span>{quantity}</span>
+              <button onClick={() => onChange(product, 1)}>+</button>
+            </div>
+          ) : (
+            <button
+              disabled={product.stock < 1}
+              onClick={() => onChange(product, 1)}
+            >
+              Adicionar
+            </button>
+          )}
+        </div>
+        <em>
+          {product.stock > 0 ? `${product.stock} em estoque` : "Indisponível"}
+        </em>
+      </div>
+    </article>
   );
 }
 
@@ -812,6 +854,11 @@ function Admin({ user, onLogout }) {
           ? "Loja publicada com sucesso ✓"
           : "Alterações salvas ✓",
       );
+      if (!overrides.published) {
+        const steps = ["store", "products", "payment", "publish"];
+        const nextStep = steps[steps.indexOf(tab) + 1];
+        if (nextStep) setTab(nextStep);
+      }
       setTimeout(() => setSaved(""), 3500);
     } catch (error) {
       console.error("Falha ao salvar loja:", error);
@@ -902,6 +949,7 @@ function Admin({ user, onLogout }) {
         stock: 0,
         active: true,
         imageUrl: "",
+        imageUrls: [],
       },
     ]);
     setTab("products");
@@ -1023,12 +1071,7 @@ function Admin({ user, onLogout }) {
               <div className="product-editors">
                 {products.map((p) => (
                   <article className="product-editor" key={p.id}>
-                    <img
-                      src={
-                        p.imageUrl ||
-                        "https://placehold.co/160/eaf6fc/247da9?text=Foto"
-                      }
-                    />
+                    <img src={productImages(p)[0]} alt={`Foto de ${p.name}`} />
                     <div>
                       <Field
                         label="Nome"
@@ -1046,22 +1089,23 @@ function Admin({ user, onLogout }) {
                         value={p.description}
                         onChange={(v) => changeProduct(p.id, "description", v)}
                       />
-                      <ImageUpload
-                        label="Foto do produto"
-                        hint="PNG, JPG ou WebP · até 8 MB"
-                        value={p.imageUrl}
+                      <ProductImagesUpload
+                        values={productImages(p).filter(
+                          (url) => !url.includes("placehold.co"),
+                        )}
                         onUpload={(file) =>
                           uploadImage(file, `products/${p.id}`)
                         }
-                        onChange={(url) => changeProduct(p.id, "imageUrl", url)}
+                        onChange={(urls) =>
+                          changeProduct(p.id, "imageUrls", urls)
+                        }
                       />
                       <div className="inline-fields">
-                        <Field
-                          type="number"
-                          label="Preço (R$)"
+                        <CurrencyField
+                          label="Preço"
                           value={p.price}
-                          onChange={(v) =>
-                            changeProduct(p.id, "price", Number(v))
+                          onChange={(value) =>
+                            changeProduct(p.id, "price", value)
                           }
                         />
                         <Field
@@ -1260,13 +1304,7 @@ function AdminPreview({ store, products }) {
           {visible.length ? (
             visible.map((product) => (
               <article key={product.id}>
-                <img
-                  src={
-                    product.imageUrl ||
-                    "https://placehold.co/90/eaf6fc/247da9?text=Foto"
-                  }
-                  alt=""
-                />
+                <img src={productImages(product)[0]} alt="" />
                 <div>
                   <b>{product.name}</b>
                   <span>{money(product.price)}</span>
@@ -1308,6 +1346,86 @@ function Field({ label, value, onChange, area, type = "text", prefix }) {
         )}
       </div>
     </label>
+  );
+}
+function CurrencyField({ label, value, onChange }) {
+  const formatted = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value) || 0);
+  return (
+    <label className="field currency-field">
+      <span>{label}</span>
+      <div>
+        <input
+          inputMode="numeric"
+          value={formatted}
+          onChange={(event) => {
+            const cents = event.target.value.replace(/\D/g, "");
+            onChange(Number(cents) / 100);
+          }}
+        />
+      </div>
+    </label>
+  );
+}
+function ProductImagesUpload({ values, onUpload, onChange }) {
+  const [status, setStatus] = useState("");
+  const select = async (event) => {
+    const available = 10 - values.length;
+    const files = [...(event.target.files || [])].slice(0, available);
+    if (!files.length) return;
+    setStatus(
+      `Enviando ${files.length} ${files.length === 1 ? "imagem" : "imagens"}…`,
+    );
+    try {
+      const uploaded = [];
+      for (const file of files) uploaded.push(await onUpload(file));
+      onChange([...values, ...uploaded].slice(0, 10));
+      setStatus("Upload concluído ✓");
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+  return (
+    <div className="multi-upload">
+      <span>
+        Fotos do produto <b>{values.length}/10</b>
+      </span>
+      <div className="multi-thumbs">
+        {values.map((url, index) => (
+          <div key={url}>
+            <img src={url} alt={`Foto ${index + 1}`} />
+            <button
+              type="button"
+              aria-label={`Remover foto ${index + 1}`}
+              onClick={() =>
+                onChange(values.filter((_, itemIndex) => itemIndex !== index))
+              }
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {values.length < 10 && (
+          <label className="add-photo">
+            +<small>Adicionar</small>
+            <input
+              type="file"
+              multiple
+              accept="image/png,image/jpeg,image/webp"
+              onChange={select}
+            />
+          </label>
+        )}
+      </div>
+      <small>
+        {status ||
+          "Selecione até 10 imagens PNG, JPG ou WebP de até 8 MB cada."}
+      </small>
+    </div>
   );
 }
 function ImageUpload({ label, hint, value, onUpload, onChange, wide }) {
