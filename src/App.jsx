@@ -730,6 +730,7 @@ function StorePage() {
             {displayed.map((product) => (
               <ProductCard
                 key={product.id}
+                store={store}
                 product={product}
                 quantity={cart[product.id] || 0}
                 onChange={change}
@@ -911,74 +912,272 @@ function PixModal({ store, total, payment, onClose }) {
     </div>
   );
 }
-function ProductCard({ product, quantity, onChange }) {
+function ProductCard({ store, product, quantity, onChange }) {
   const images = productImages(product);
   const [current, setCurrent] = useState(0);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [likesCount, setLikesCount] = useState(Number(product.likesCount) || 0);
+  const [liked, setLiked] = useState(false);
   const move = (direction) =>
     setCurrent((index) => (index + direction + images.length) % images.length);
+  useEffect(
+    () => setLikesCount(Number(product.likesCount) || 0),
+    [product.likesCount],
+  );
+  const like = async () => {
+    if (liked) return;
+    let visitorId;
+    try {
+      visitorId = localStorage.getItem("tv-visitor-id");
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        localStorage.setItem("tv-visitor-id", visitorId);
+      }
+    } catch {
+      visitorId = crypto.randomUUID();
+    }
+    setLiked(true);
+    setLikesCount((count) => count + 1);
+    try {
+      const response = await fetch("/.netlify/functions/product-social", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "like",
+          storeId: store.id,
+          productId: product.id,
+          visitorId,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setLikesCount(data.likesCount);
+    } catch {
+      setLiked(false);
+      setLikesCount((count) => Math.max(0, count - 1));
+    }
+  };
+  const share = () => {
+    const productUrl = `${location.origin}/loja/${store.slug}#produto-${product.id}`;
+    const message = [
+      `Olha este item da ${store.brand}:`,
+      `*${product.name}*`,
+      money(product.price),
+      product.description,
+      images[0],
+      productUrl,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
   return (
-    <article className={`product-card ${product.stock < 1 ? "sold-out" : ""}`}>
-      <div className="product-photo">
-        <img
-          src={images[Math.min(current, images.length - 1)]}
-          alt={`${product.name} — foto ${current + 1}`}
-        />
-        {images.length > 1 && (
-          <>
-            <button
-              className="carousel-prev"
-              aria-label="Foto anterior"
-              onClick={() => move(-1)}
-            >
-              ‹
-            </button>
-            <button
-              className="carousel-next"
-              aria-label="Próxima foto"
-              onClick={() => move(1)}
-            >
-              ›
-            </button>
-            <div className="carousel-dots">
-              {images.map((_, index) => (
-                <button
-                  key={index}
-                  aria-label={`Ver foto ${index + 1}`}
-                  className={index === current ? "active" : ""}
-                  onClick={() => setCurrent(index)}
-                />
-              ))}
-            </div>
-          </>
-        )}
-        {product.stock < 1 && <span>Esgotado</span>}
-      </div>
-      <div className="product-copy">
-        <small>{product.category || "Produto"}</small>
-        <h3>{product.name}</h3>
-        <p>{product.description}</p>
-        <div className="product-bottom">
-          <b>{money(product.price)}</b>
-          {quantity ? (
-            <div className="quantity">
-              <button onClick={() => onChange(product, -1)}>−</button>
-              <span>{quantity}</span>
-              <button onClick={() => onChange(product, 1)}>+</button>
-            </div>
-          ) : (
-            <button
-              disabled={product.stock < 1}
-              onClick={() => onChange(product, 1)}
-            >
-              Adicionar
-            </button>
+    <>
+      <article
+        id={`produto-${product.id}`}
+        className={`product-card ${product.stock < 1 ? "sold-out" : ""}`}
+      >
+        <div className="product-photo">
+          <img
+            src={images[Math.min(current, images.length - 1)]}
+            alt={`${product.name} — foto ${current + 1}`}
+          />
+          {images.length > 1 && (
+            <>
+              <button
+                className="carousel-prev"
+                aria-label="Foto anterior"
+                onClick={() => move(-1)}
+              >
+                ‹
+              </button>
+              <button
+                className="carousel-next"
+                aria-label="Próxima foto"
+                onClick={() => move(1)}
+              >
+                ›
+              </button>
+              <div className="carousel-dots">
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    aria-label={`Ver foto ${index + 1}`}
+                    className={index === current ? "active" : ""}
+                    onClick={() => setCurrent(index)}
+                  />
+                ))}
+              </div>
+            </>
           )}
+          {product.stock < 1 && <span>Esgotado</span>}
         </div>
-        <em>
-          {product.stock > 0 ? `${product.stock} em estoque` : "Indisponível"}
-        </em>
-      </div>
-    </article>
+        <div className="product-copy">
+          <small>{product.category || "Produto"}</small>
+          <h3>{product.name}</h3>
+          <p>{product.description}</p>
+          <div className="product-bottom">
+            <b>{money(product.price)}</b>
+            {quantity ? (
+              <div className="quantity">
+                <button onClick={() => onChange(product, -1)}>−</button>
+                <span>{quantity}</span>
+                <button onClick={() => onChange(product, 1)}>+</button>
+              </div>
+            ) : (
+              <button
+                disabled={product.stock < 1}
+                onClick={() => onChange(product, 1)}
+              >
+                Adicionar
+              </button>
+            )}
+          </div>
+          <em>
+            {product.stock > 0 ? `${product.stock} em estoque` : "Indisponível"}
+          </em>
+          <div className="product-social">
+            <button
+              className={liked ? "liked" : ""}
+              onClick={like}
+              aria-label="Curtir produto"
+            >
+              <span aria-hidden="true">{liked ? "♥" : "♡"}</span>
+              {likesCount || "Curtir"}
+            </button>
+            <button
+              onClick={() => setCommentsOpen(true)}
+              aria-label="Ver comentários"
+            >
+              <span aria-hidden="true">◇</span>
+              {product.commentsCount
+                ? `${product.commentsCount} comentários`
+                : "Comentar"}
+            </button>
+            <button onClick={share} aria-label="Compartilhar no WhatsApp">
+              <span aria-hidden="true">↗</span> Compartilhar
+            </button>
+          </div>
+        </div>
+      </article>
+      {commentsOpen && (
+        <CommentsModal
+          store={store}
+          product={product}
+          image={images[0]}
+          onClose={() => setCommentsOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function CommentsModal({ store, product, image, onClose }) {
+  const [comments, setComments] = useState([]);
+  const [author, setAuthor] = useState("");
+  const [comment, setComment] = useState("");
+  const [status, setStatus] = useState("Carregando comentários…");
+  useEffect(() => {
+    const params = new URLSearchParams({
+      storeId: store.id,
+      productId: product.id,
+    });
+    fetch(`/.netlify/functions/product-social?${params}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        setComments(data.comments || []);
+        setStatus("");
+      })
+      .catch((error) => setStatus(error.message));
+  }, [store.id, product.id]);
+  const send = async (event) => {
+    event.preventDefault();
+    setStatus("Publicando…");
+    try {
+      const response = await fetch("/.netlify/functions/product-social", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "comment",
+          storeId: store.id,
+          productId: product.id,
+          author,
+          text: comment,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setComments((current) => [data.comment, ...current]);
+      setComment("");
+      setStatus("");
+    } catch (error) {
+      setStatus(error.message);
+    }
+  };
+  return (
+    <div
+      className="modal-backdrop comments-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section className="comments-modal">
+        <button className="modal-close" onClick={onClose}>
+          ×
+        </button>
+        <div className="comments-product">
+          <img src={image} alt="" />
+          <div>
+            <small>{product.category}</small>
+            <b>{product.name}</b>
+            <span>{money(product.price)}</span>
+          </div>
+        </div>
+        <div className="comments-list">
+          {comments.map((item) => (
+            <article key={item.id}>
+              <div className="comment-avatar">
+                {item.author?.charAt(0).toUpperCase()}
+              </div>
+              <p>
+                <b>{item.author}</b> {item.text}
+                <small>
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleString("pt-BR")
+                    : "Agora"}
+                </small>
+              </p>
+            </article>
+          ))}
+          {!comments.length && !status && (
+            <p className="no-comments">Seja a primeira pessoa a comentar.</p>
+          )}
+          {status && <p className="comment-status">{status}</p>}
+        </div>
+        <form className="comment-form" onSubmit={send}>
+          <input
+            value={author}
+            onChange={(event) => setAuthor(event.target.value)}
+            placeholder="Seu nome"
+            maxLength="40"
+            required
+          />
+          <div>
+            <input
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              placeholder="Adicione um comentário…"
+              maxLength="300"
+              required
+            />
+            <button>Publicar</button>
+          </div>
+        </form>
+      </section>
+    </div>
   );
 }
 
