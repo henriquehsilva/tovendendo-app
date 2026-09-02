@@ -14,11 +14,16 @@ const cleanId = (value) =>
 export default async function (request) {
   try {
     const url = new URL(request.url);
+    const publicPath = url.pathname.match(
+      /\/loja\/([^/]+)\/produto\/([^/?#]+)/,
+    );
     const storeId = cleanId(url.searchParams.get("storeId"));
-    const slug = String(url.searchParams.get("slug") || "")
+    const slug = String(url.searchParams.get("slug") || publicPath?.[1] || "")
       .slice(0, 120)
       .replace(/[^a-zA-Z0-9-]/g, "");
-    const productId = cleanId(url.searchParams.get("productId"));
+    const productId = cleanId(
+      url.searchParams.get("productId") || publicPath?.[2],
+    );
     const admin = firebaseAdmin();
     const firestore = admin.firestore();
     let storeRef;
