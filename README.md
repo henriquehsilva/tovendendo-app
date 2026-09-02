@@ -26,7 +26,7 @@ O `netlify.toml` compila com `npm run build`, publica `dist` e habilita as funç
 
 ## Plano Pro e Stripe
 
-O Stripe cobra somente a assinatura do software; os pagamentos das lojas são feitos diretamente por Pix. Crie um preço recorrente no Stripe e configure `STRIPE_SECRET_KEY` e `STRIPE_PRO_PRICE_ID` na Netlify. A variável aceita diretamente o preço `price_...` ou um produto `prod_...` que tenha esse preço recorrente definido como padrão. O formulário envia dados cadastrais à função `create-subscription`, que redireciona para o Stripe Checkout; os dados do cartão nunca passam pelo React.
+O plano Pro custa R$ 49,90 por mês. O Stripe cobra somente a assinatura do software; os pagamentos das lojas são feitos diretamente por Pix. Crie no Stripe um preço recorrente mensal de R$ 49,90 e configure `STRIPE_SECRET_KEY` e `STRIPE_PRO_PRICE_ID` na Netlify. A variável aceita diretamente o preço `price_...` ou um produto `prod_...` que tenha esse preço recorrente definido como padrão. O formulário envia dados cadastrais à função `create-subscription`, que redireciona para o Stripe Checkout; os dados do cartão nunca passam pelo React.
 
 ## Stripe Connect para lojas
 

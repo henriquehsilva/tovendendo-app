@@ -301,7 +301,7 @@ function Plans({ onPro }) {
           <span className="tag">MAIS ESCOLHIDO</span>
           <h3>Pro</h3>
           <p>Para vender online sem interrupções.</p>
-          <strong>Valor configurado no Stripe</strong>
+          <strong>R$ 49,90 / mês</strong>
           <ul>
             <li>✓ Tudo do período de teste</li>
             <li>✓ QR Code Pix por loja</li>
@@ -356,8 +356,8 @@ function ProModal({ onClose }) {
         <p className="eyebrow">PLANO PRO</p>
         <h2>Prepare seu acesso Pro.</h2>
         <p className="intro">
-          Informe seus dados. O cartão será preenchido somente no checkout
-          seguro do Stripe.
+          Assine por R$ 49,90 por mês. Informe seus dados; o cartão será
+          preenchido somente no checkout seguro do Stripe.
         </p>
         <form onSubmit={submit}>
           <div className="person-toggle">
