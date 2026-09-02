@@ -14,8 +14,9 @@ export const demoStore = {
   hours: "Seg–Sáb · 9h às 18h",
   payment: {
     enabled: true,
-    maxInstallments: 12,
-    statementDescriptor: "ACHADINHOS",
+    pixKey: "11999999999",
+    pixReceiverName: "ANA SILVA",
+    pixCity: "SAO PAULO",
   },
 };
 export const demoProducts = [
@@ -60,5 +61,5 @@ export const emptyStore = (uid) => ({
   brand: "",
   ownerId: uid,
   published: false,
-  payment: { enabled: false, maxInstallments: 12, statementDescriptor: "" },
+  payment: { enabled: false, pixKey: "", pixReceiverName: "", pixCity: "" },
 });

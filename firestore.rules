@@ -15,7 +15,5 @@ service cloud.firestore {
         allow write: if false;
       }
     }
-    // OAuth tokens are server-only. Firebase Admin bypasses these rules.
-    match /mercadoPagoConnections/{storeId} { allow read, write: if false; }
   }
 }

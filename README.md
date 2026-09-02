@@ -1,6 +1,6 @@
 # Tô Vendendo
 
-Gerador de lojas virtuais para produtos variados. Cada lojista personaliza a vitrine, controla o estoque e conecta sua própria conta Mercado Pago para receber pagamentos com cartão, Pix e parcelamento.
+Gerador de lojas virtuais para produtos variados. Cada lojista personaliza a vitrine, controla o estoque e configura sua própria chave Pix para receber pagamentos diretamente.
 
 ## Desenvolvimento
 
@@ -10,23 +10,15 @@ npm install
 npm run dev
 ```
 
-Sem Firebase, o frontend abre em modo demonstração e salva dados no navegador. O checkout real e a conexão Mercado Pago exigem Firebase Admin e as variáveis de servidor.
+Sem Firebase, o frontend abre em modo demonstração e salva dados no navegador.
 
 ## Firebase
 
 Ative Authentication (e-mail/senha e, opcionalmente, Google), Firestore e Storage. Preencha as variáveis `VITE_FIREBASE_*`, codifique o JSON de uma conta de serviço em base64 e configure-o como `FIREBASE_SERVICE_ACCOUNT_BASE64` somente na Netlify. Publique `firestore.rules` e `storage.rules`.
 
-## Mercado Pago por lojista
+## Pagamento por Pix
 
-Crie uma aplicação de marketplace no Mercado Pago, configure a URL de redirecionamento como:
-
-```text
-https://seu-dominio.com/.netlify/functions/mercadopago-callback
-```
-
-Na Netlify, defina `MERCADO_PAGO_CLIENT_ID`, `MERCADO_PAGO_CLIENT_SECRET`, `MERCADO_PAGO_OAUTH_STATE_SECRET` e `APP_URL`. O lojista salva sua loja e usa **Conectar Mercado Pago** no painel. O OAuth grava o token individual em `mercadoPagoConnections/{storeId}`, coleção bloqueada para clientes pelas regras do Firestore.
-
-O checkout sempre relê preço e estoque no servidor. Após a confirmação do webhook, o pedido é aprovado e as unidades vendidas são baixadas do estoque em uma transação.
+Cada lojista informa sua chave Pix, o nome e a cidade do recebedor no painel. A vitrine gera no navegador um QR Code Pix com o valor da compra e oferece o código copia e cola. O pagamento vai diretamente para a chave configurada; a plataforma não recebe nem intermedeia o valor.
 
 ## Deploy
 
@@ -34,4 +26,4 @@ O `netlify.toml` compila com `npm run build`, publica `dist` e habilita as funç
 
 ## Plano Pro e Stripe
 
-O Stripe cobra somente a assinatura do software; as vendas dos lojistas continuam no Mercado Pago conectado por OAuth. Crie um preço recorrente no Stripe e configure `STRIPE_SECRET_KEY` e `STRIPE_PRO_PRICE_ID` na Netlify. A variável aceita diretamente o preço `price_...` ou um produto `prod_...` que tenha esse preço recorrente definido como padrão. O formulário envia dados cadastrais à função `create-subscription`, que redireciona para o Stripe Checkout; os dados do cartão nunca passam pelo React.
+O Stripe cobra somente a assinatura do software; os pagamentos das lojas são feitos diretamente por Pix. Crie um preço recorrente no Stripe e configure `STRIPE_SECRET_KEY` e `STRIPE_PRO_PRICE_ID` na Netlify. A variável aceita diretamente o preço `price_...` ou um produto `prod_...` que tenha esse preço recorrente definido como padrão. O formulário envia dados cadastrais à função `create-subscription`, que redireciona para o Stripe Checkout; os dados do cartão nunca passam pelo React.

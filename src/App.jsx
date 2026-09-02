@@ -30,6 +30,7 @@ import {
   where,
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import QRCode from "qrcode";
 import { auth, db, firebaseEnabled, googleProvider, storage } from "./firebase";
 import { demoProducts, demoStore, emptyStore } from "./data";
 
@@ -50,6 +51,42 @@ const instagramHandle = (value) =>
     .replace(/^@/, "")
     .split(/[/?#]/)[0]
     .replace(/[^a-zA-Z0-9._]/g, "");
+const pixText = (value, max) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 .]/g, "")
+    .toUpperCase()
+    .slice(0, max);
+const pixField = (id, value) =>
+  `${id}${String(value.length).padStart(2, "0")}${value}`;
+const pixCrc = (payload) => {
+  let crc = 0xffff;
+  for (let index = 0; index < payload.length; index++) {
+    crc ^= payload.charCodeAt(index) << 8;
+    for (let bit = 0; bit < 8; bit++)
+      crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+};
+const createPixPayload = ({ key, name, city, amount }) => {
+  const merchant =
+    pixField("00", "br.gov.bcb.pix") + pixField("01", String(key).trim());
+  const additional = pixField("05", "***");
+  const base =
+    pixField("00", "01") +
+    pixField("01", "12") +
+    pixField("26", merchant) +
+    pixField("52", "0000") +
+    pixField("53", "986") +
+    pixField("54", Number(amount).toFixed(2)) +
+    pixField("58", "BR") +
+    pixField("59", pixText(name, 25) || "LOJA") +
+    pixField("60", pixText(city, 15) || "BRASIL") +
+    pixField("62", additional) +
+    "6304";
+  return base + pixCrc(base);
+};
 const slugify = (value) =>
   String(value)
     .normalize("NFD")
@@ -109,8 +146,8 @@ function Landing() {
             <p className="eyebrow">SITE PARA QUEM VENDE</p>
             <h1>Sua loja online, bonita e pronta para vender.</h1>
             <p>
-              Publique produtos variados, acompanhe o estoque e receba no cartão
-              com parcelamento pelo Mercado Pago.
+              Publique produtos variados, acompanhe o estoque e receba direto na
+              sua chave Pix.
             </p>
             <Link className="button primary" to="/admin">
               Testar grátis por 30 dias
@@ -122,7 +159,7 @@ function Landing() {
         <section className="benefits">
           <span>◉ Link exclusivo para sua loja</span>
           <span>▣ Estoque sob controle</span>
-          <span>↗ Pagamento parcelado</span>
+          <span>↗ Pagamento por QR Code Pix</span>
         </section>
         <section className="how">
           <p className="eyebrow">SIMPLES DE VERDADE</p>
@@ -141,7 +178,9 @@ function Landing() {
             <article>
               <b>03</b>
               <h3>Venda online</h3>
-              <p>Seu cliente compra com Mercado Pago e escolhe as parcelas.</p>
+              <p>
+                Seu cliente escaneia o QR Code e paga direto para sua chave.
+              </p>
             </article>
           </div>
         </section>
@@ -191,8 +230,8 @@ function Plans({ onPro }) {
           <strong>Valor configurado no Stripe</strong>
           <ul>
             <li>✓ Tudo do período de teste</li>
-            <li>✓ Mercado Pago por lojista</li>
-            <li>✓ Pagamento parcelado</li>
+            <li>✓ QR Code Pix por loja</li>
+            <li>✓ Código Pix copia e cola</li>
             <li>✓ Gestão contínua de estoque</li>
             <li>✓ Suporte de configuração</li>
           </ul>
@@ -461,6 +500,7 @@ function StorePage() {
   const [cart, setCart] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [pixPayment, setPixPayment] = useState(null);
   const [error, setError] = useState("");
   useEffect(() => {
     if (!firebaseEnabled) {
@@ -518,28 +558,32 @@ function StorePage() {
       ),
     }));
   const checkout = async () => {
-    const items = visible
-      .filter((p) => cart[p.id])
-      .map((p) => ({ id: p.id, quantity: cart[p.id] }));
-    if (!items.length) return;
+    if (!count) return;
+    if (!store.payment?.pixKey?.trim()) {
+      setError("A loja ainda não configurou uma chave Pix.");
+      return;
+    }
     setPaying(true);
     setError("");
     try {
-      const response = await fetch("/.netlify/functions/create-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeId: store.id,
-          storeSlug: store.slug,
-          items,
-          preview: store.id === "demo",
-        }),
+      const payload = createPixPayload({
+        key: store.payment.pixKey,
+        name: store.payment.pixReceiverName || store.brand,
+        city: store.payment.pixCity || store.address,
+        amount: total,
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      location.href = data.checkoutUrl;
+      const qrCode = await QRCode.toDataURL(payload, {
+        width: 360,
+        margin: 2,
+        color: { dark: "#12202d", light: "#ffffff" },
+      });
+      setPixPayment({ payload, qrCode });
+      setCartOpen(false);
     } catch (err) {
-      setError(err.message);
+      setError(
+        "Não foi possível gerar o Pix. Confira os dados de pagamento da loja.",
+      );
+    } finally {
       setPaying(false);
     }
   };
@@ -685,11 +729,10 @@ function StorePage() {
                   disabled={paying}
                   onClick={checkout}
                 >
-                  {paying ? "Abrindo Mercado Pago…" : "Pagar com Mercado Pago"}
+                  {paying ? "Gerando Pix…" : "Efetuar pagamento via Pix"}
                 </button>
                 <small className="secure">
-                  Cartão, Pix e até {store.payment.maxInstallments || 12}x,
-                  conforme condições do Mercado Pago.
+                  Pagamento direto para a chave Pix desta loja.
                 </small>
               </>
             ) : (
@@ -704,6 +747,63 @@ function StorePage() {
           </section>
         </div>
       )}
+      {pixPayment && (
+        <PixModal
+          store={store}
+          total={total}
+          payment={pixPayment}
+          onClose={() => setPixPayment(null)}
+        />
+      )}
+    </div>
+  );
+}
+function PixModal({ store, total, payment, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    await navigator.clipboard.writeText(payment.payload);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+  return (
+    <div
+      className="modal-backdrop pix-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section className="pix-modal">
+        <button className="modal-close" onClick={onClose}>
+          ×
+        </button>
+        <div className="pix-mark">PIX</div>
+        <p className="eyebrow">PAGAMENTO SEGURO</p>
+        <h2>Escaneie para pagar</h2>
+        <p>Abra o aplicativo do seu banco e leia o QR Code abaixo.</p>
+        <img
+          className="pix-qr"
+          src={payment.qrCode}
+          alt="QR Code Pix para pagamento"
+        />
+        <div className="pix-value">
+          <span>Valor da compra</span>
+          <strong>{money(total)}</strong>
+        </div>
+        <button className="button primary full" onClick={copy}>
+          {copied ? "Código Pix copiado ✓" : "Copiar código Pix"}
+        </button>
+        <small>
+          O pagamento será enviado diretamente para{" "}
+          <b>{store.payment.pixReceiverName || store.brand}</b>. Envie o
+          comprovante para a loja após pagar.
+        </small>
+        <a
+          className="pix-whatsapp"
+          href={`https://wa.me/${String(store.whatsapp || "").replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Acabei de realizar o Pix de ${money(total)} referente ao meu pedido.`)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Enviar comprovante pelo WhatsApp
+        </a>
+      </section>
     </div>
   );
 }
@@ -785,18 +885,6 @@ function Admin({ user, onLogout }) {
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (!params.has("mp")) return;
-    setTab("payment");
-    setSaved(
-      params.get("message") ||
-        (params.get("mp") === "connected"
-          ? "Conta Mercado Pago conectada ✓"
-          : "Não foi possível conectar a conta."),
-    );
-    history.replaceState({}, "", location.pathname);
-  }, []);
   useEffect(() => {
     if (!user) return;
     if (!firebaseEnabled) {
@@ -925,38 +1013,6 @@ function Admin({ user, onLogout }) {
       return null;
     } finally {
       setSaving(false);
-    }
-  };
-  const connect = async () => {
-    if (!firebaseEnabled) {
-      setSaved(
-        "A conexão do Mercado Pago está disponível após configurar o Firebase.",
-      );
-      return;
-    }
-    try {
-      const storeId = store.id || (await save({}, false));
-      if (!storeId) return;
-      setSaved("Abrindo o Mercado Pago para autorizar sua conta…");
-      const token = await user.getIdToken();
-      const response = await fetch("/.netlify/functions/mercadopago-connect", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ storeId }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(
-          response.status === 503
-            ? "A conexão com o Mercado Pago está temporariamente indisponível. Tente novamente mais tarde ou fale com o suporte."
-            : data.error || "Não foi possível abrir o Mercado Pago.",
-        );
-      location.href = data.authorizationUrl;
-    } catch (err) {
-      setSaved(err.message);
     }
   };
   const add = () => {
@@ -1166,44 +1222,11 @@ function Admin({ user, onLogout }) {
           )}
           {tab === "payment" && (
             <>
-              <p className="eyebrow">MERCADO PAGO</p>
-              <h1>Receba na sua conta.</h1>
+              <p className="eyebrow">PAGAMENTO VIA PIX</p>
+              <h1>Receba direto na sua chave.</h1>
               <p className="intro">
-                Cada lojista conecta a própria conta Mercado Pago. As vendas são
-                processadas nessa conta e o token fica protegido no servidor.
-              </p>
-              <div className="connection">
-                <span className={store.payment?.connected ? "connected" : ""}>
-                  ●
-                </span>
-                <div>
-                  <b>
-                    {store.payment?.connected
-                      ? "Conta conectada"
-                      : "Conta ainda não conectada"}
-                  </b>
-                  <small>
-                    {store.payment?.connected
-                      ? "Checkout disponível para esta loja."
-                      : "Autorize o Tô Vendendo no Mercado Pago."}
-                  </small>
-                </div>
-                <button
-                  className="button outline"
-                  disabled={saving}
-                  onClick={connect}
-                >
-                  {saving
-                    ? "Preparando conexão…"
-                    : store.payment?.connected
-                      ? "Trocar conta conectada"
-                      : "Conectar minha conta Mercado Pago"}
-                </button>
-              </div>
-              <p className="oauth-explanation">
-                Você será direcionado ao Mercado Pago para entrar e autorizar
-                esta loja. Cada lojista conecta sua própria conta e recebe as
-                vendas diretamente nela.
+                Configure os dados Pix da sua loja. O cliente verá um QR Code e
+                o código copia e cola com o valor exato da compra.
               </p>
               <label className="switch">
                 <input
@@ -1211,34 +1234,32 @@ function Admin({ user, onLogout }) {
                   checked={store.payment?.enabled}
                   onChange={(e) => updatePayment("enabled", e.target.checked)}
                 />
-                <span>Oferecer pagamento online</span>
+                <span>Oferecer pagamento via Pix</span>
               </label>
               <Field
-                type="number"
-                label="Máximo de parcelas"
-                value={store.payment?.maxInstallments || 12}
-                onChange={(v) =>
-                  updatePayment(
-                    "maxInstallments",
-                    Math.min(12, Math.max(1, Number(v))),
-                  )
+                label="Chave Pix"
+                value={store.payment?.pixKey || ""}
+                onChange={(value) => updatePayment("pixKey", value.trim())}
+              />
+              <Field
+                label="Nome do recebedor"
+                value={store.payment?.pixReceiverName || ""}
+                onChange={(value) =>
+                  updatePayment("pixReceiverName", pixText(value, 25))
                 }
               />
               <Field
-                label="Nome na fatura (até 16 caracteres)"
-                value={store.payment?.statementDescriptor || ""}
-                onChange={(v) =>
-                  updatePayment(
-                    "statementDescriptor",
-                    v.toUpperCase().slice(0, 16),
-                  )
+                label="Cidade do recebedor"
+                value={store.payment?.pixCity || ""}
+                onChange={(value) =>
+                  updatePayment("pixCity", pixText(value, 15))
                 }
               />
               <div className="notice">
-                <b>Credenciais protegidas</b>
+                <b>Pagamento direto</b>
                 <p>
-                  O painel nunca solicita a senha ou o Access Token do lojista.
-                  A autorização acontece diretamente no Mercado Pago.
+                  O valor vai diretamente para esta chave Pix. Confira
+                  cuidadosamente os dados antes de publicar a loja.
                 </p>
               </div>
             </>
