@@ -1045,7 +1045,17 @@ function ProductCard({ store, product, quantity, onChange }) {
   const share = async () => {
     if (sharing) return;
     setSharing(true);
-    const previewUrl = `${location.origin}/.netlify/functions/product-preview?${new URLSearchParams({ storeId: store.id, productId: product.id })}`;
+    const imageVersion =
+      new URL(images[0], location.origin).searchParams
+        .get("token")
+        ?.slice(0, 8) || product.id.slice(0, 8);
+    const previewUrl = `${location.origin}/.netlify/functions/product-preview?${new URLSearchParams(
+      {
+        storeId: store.id,
+        productId: product.id,
+        v: imageVersion,
+      },
+    )}`;
     const message = [
       `Olha este item da ${store.brand}:`,
       `*${product.name}*`,
