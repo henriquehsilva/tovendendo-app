@@ -34,4 +34,4 @@ O `netlify.toml` compila com `npm run build`, publica `dist` e habilita as funç
 
 ## Plano Pro e Stripe
 
-O Stripe cobra somente a assinatura do software; as vendas dos lojistas continuam no Mercado Pago conectado por OAuth. Crie um preço recorrente no Stripe e configure `STRIPE_SECRET_KEY` e `STRIPE_PRO_PRICE_ID` na Netlify. O formulário envia dados cadastrais à função `create-subscription`, que redireciona para o Stripe Checkout; os dados do cartão nunca passam pelo React.
+O Stripe cobra somente a assinatura do software; as vendas dos lojistas continuam no Mercado Pago conectado por OAuth. Crie um preço recorrente no Stripe e configure `STRIPE_SECRET_KEY` e `STRIPE_PRO_PRICE_ID` na Netlify. A variável aceita diretamente o preço `price_...` ou um produto `prod_...` que tenha esse preço recorrente definido como padrão. O formulário envia dados cadastrais à função `create-subscription`, que redireciona para o Stripe Checkout; os dados do cartão nunca passam pelo React.
