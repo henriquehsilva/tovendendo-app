@@ -9,9 +9,12 @@ import {
 } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
+  browserLocalPersistence,
+  getRedirectResult,
   onAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from "firebase/auth";
 import {
@@ -343,6 +346,17 @@ function Login({ user }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  useEffect(() => {
+    if (!firebaseEnabled) return;
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) nav("/admin", { replace: true });
+      })
+      .catch((error) => {
+        setError(googleAuthError(error));
+      })
+      .finally(() => setGoogleLoading(false));
+  }, [nav]);
   if (user) return <Navigate to="/admin" />;
   const submit = async (e) => {
     e.preventDefault();
@@ -362,10 +376,10 @@ function Login({ user }) {
     setGoogleLoading(true);
     setError("");
     try {
-      await signInWithPopup(auth, googleProvider);
+      await setPersistence(auth, browserLocalPersistence);
+      await signInWithRedirect(auth, googleProvider);
     } catch (err) {
-      if (err.code !== "auth/popup-closed-by-user")
-        setError(googleAuthError(err));
+      setError(googleAuthError(err));
       setGoogleLoading(false);
     }
   };
