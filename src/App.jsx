@@ -2172,47 +2172,86 @@ function Admin({ user, onLogout }) {
   );
 }
 function AdminPreview({ store, products }) {
-  const visible = products.slice(0, 4);
+  const visible = products;
+  const categories = storeCategories(store, visible);
   return (
     <aside className="live-preview">
       <p className="eyebrow">PREVIEW AO VIVO</p>
-      <span>Assim seus clientes verão a loja</span>
+      <span>Role a tela para visualizar a loja completa</span>
       <div className="preview-phone" style={paletteStyle(store.palette)}>
-        <header>
-          {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <i>●</i>}
-          <b>{store.brand || "Sua loja"}</b>
-        </header>
-        <div
-          className="preview-cover"
-          style={{
-            backgroundImage: `linear-gradient(90deg,#102535ba,#10253533),url(${store.heroImage || demoStore.heroImage})`,
-          }}
-        >
-          <small>COMPRE ONLINE</small>
-          <strong>
-            {store.tagline || "Sua frase principal aparece aqui."}
-          </strong>
+        <span className="iphone-button iphone-silent" />
+        <span className="iphone-button iphone-volume-up" />
+        <span className="iphone-button iphone-volume-down" />
+        <span className="iphone-button iphone-power" />
+        <div className="dynamic-island">
+          <i />
         </div>
-        <div className="preview-products">
-          <h3>Produtos</h3>
-          {visible.length ? (
-            visible.map((product) => (
-              <article key={product.id}>
-                <img src={productImages(product)[0]} alt="" />
-                <div>
-                  <b>{product.name}</b>
-                  <span>{money(product.price)}</span>
-                  <small>
-                    {productUnavailable(product)
-                      ? "Indisponível"
-                      : "Disponível"}
-                  </small>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p>Adicione produtos para preencher sua vitrine.</p>
+        <div className="preview-screen">
+          <header>
+            {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <i>●</i>}
+            <b>{store.brand || "Sua loja"}</b>
+            <span>Sacola</span>
+          </header>
+          <div
+            className="preview-cover"
+            style={{
+              backgroundImage: `linear-gradient(90deg,#102535ba,#10253533),url(${store.heroImage || demoStore.heroImage})`,
+            }}
+          >
+            <small>COMPRE ONLINE</small>
+            <strong>
+              {store.tagline || "Sua frase principal aparece aqui."}
+            </strong>
+            <p>{store.description || "A descrição da loja aparecerá aqui."}</p>
+          </div>
+          {categories.length > 0 && (
+            <div className="preview-categories">
+              <b>Todos</b>
+              {categories.map((category) => (
+                <span key={category.id}>{category.name}</span>
+              ))}
+            </div>
           )}
+          <div className="preview-products">
+            <h3>Produtos</h3>
+            {visible.length ? (
+              visible.map((product) => (
+                <article key={product.id}>
+                  <img src={productImages(product)[0]} alt="" />
+                  <div>
+                    <b>{product.name}</b>
+                    <span>{money(product.price)}</span>
+                    <small>
+                      {productUnavailable(product)
+                        ? "Indisponível"
+                        : "Disponível"}
+                    </small>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <p>Adicione produtos para preencher sua vitrine.</p>
+            )}
+          </div>
+          <section className="preview-about">
+            <small>SOBRE A LOJA</small>
+            <h3>{store.brand || "Sua loja"}</h3>
+            <p>{store.description || "Conte um pouco sobre a sua loja."}</p>
+            <span>⌖ {store.address || "Sua localização"}</span>
+            <span>◷ {store.hours || "Seu horário"}</span>
+            <div>
+              {store.whatsapp && <b>WhatsApp</b>}
+              {store.instagram && <b>Instagram</b>}
+            </div>
+          </section>
+          <section className="preview-payment">
+            <b>Formas de pagamento</b>
+            <span>{store.payment?.enabled ? "PIX" : ""}</span>
+            <span>{store.payment?.stripeConnected ? "Cartão" : ""}</span>
+          </section>
+          <footer>
+            © {new Date().getFullYear()} {store.brand || "Sua loja"}
+          </footer>
         </div>
       </div>
     </aside>

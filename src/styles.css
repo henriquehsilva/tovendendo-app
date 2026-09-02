@@ -1516,27 +1516,100 @@ footer {
   font-size: 0.75rem;
 }
 .preview-phone {
-  overflow: hidden;
-  border: 7px solid var(--ink);
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 18px 35px #17394d25;
+  position: relative;
+  height: min(680px, calc(100vh - 170px));
+  min-height: 560px;
+  padding: 7px;
+  border: 2px solid #6f767b;
+  border-radius: 46px;
+  background: linear-gradient(145deg, #25292c, #080a0b);
+  box-shadow:
+    0 24px 45px #17394d35,
+    inset 0 0 0 2px #aeb5b833,
+    inset 0 0 0 6px #050607;
 }
-.preview-phone header {
+.preview-screen {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 38px;
+  background: #fff;
+  scrollbar-width: none;
+}
+.preview-screen::-webkit-scrollbar {
+  display: none;
+}
+.dynamic-island {
+  position: absolute;
+  z-index: 5;
+  top: 17px;
+  left: 50%;
+  width: 92px;
+  height: 25px;
+  border-radius: 20px;
+  background: #050607;
+  transform: translateX(-50%);
+  box-shadow: 0 1px 2px #ffffff24;
+}
+.dynamic-island i {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #13263d;
+  box-shadow: inset 0 0 2px #4d75a2;
+}
+.iphone-button {
+  position: absolute;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  background: #555b5f;
+}
+.iphone-silent {
+  top: 95px;
+  left: -4px;
+  height: 26px;
+}
+.iphone-volume-up {
+  top: 142px;
+  left: -4px;
+  height: 52px;
+}
+.iphone-volume-down {
+  top: 205px;
+  left: -4px;
+  height: 52px;
+}
+.iphone-power {
+  top: 155px;
+  right: -4px;
+  height: 78px;
+  border-radius: 0 3px 3px 0;
+}
+.preview-screen header {
   height: 48px;
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 0 12px;
+  padding: 0 13px;
+  padding-top: 8px;
   font-size: 0.72rem;
 }
-.preview-phone header img {
+.preview-screen header > span {
+  margin-left: auto;
+  color: var(--blue-dark);
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+.preview-screen header img {
   width: 25px;
   height: 25px;
   border-radius: 5px;
   object-fit: cover;
 }
-.preview-phone header i {
+.preview-screen header i {
   color: var(--blue);
   font-style: normal;
 }
@@ -1558,6 +1631,26 @@ footer {
 .preview-cover strong {
   font-size: 1.15rem;
   line-height: 1.05;
+}
+.preview-cover p {
+  margin: 2px 0 0;
+  font-size: 0.58rem;
+  line-height: 1.3;
+}
+.preview-categories {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  padding: 12px 14px 0;
+}
+.preview-categories span,
+.preview-categories b {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 20px;
+  background: var(--pale);
+  color: var(--blue-dark);
+  font-size: 0.52rem;
 }
 .preview-products {
   padding: 15px;
@@ -1602,6 +1695,64 @@ footer {
 .preview-products > p {
   color: var(--muted);
   font-size: 0.72rem;
+}
+.preview-about {
+  display: grid;
+  gap: 6px;
+  padding: 20px 15px;
+  background: var(--pale);
+}
+.preview-about > small {
+  color: var(--blue-dark);
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.preview-about h3,
+.preview-about p {
+  margin: 0;
+}
+.preview-about p,
+.preview-about > span {
+  color: var(--muted);
+  font-size: 0.58rem;
+  line-height: 1.35;
+}
+.preview-about div {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+.preview-about div b {
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: var(--blue-dark);
+  color: #fff;
+  font-size: 0.52rem;
+}
+.preview-payment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 15px;
+  font-size: 0.56rem;
+}
+.preview-payment b {
+  margin-right: auto;
+}
+.preview-payment span:not(:empty) {
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: var(--pale);
+  color: var(--blue-dark);
+  font-weight: 800;
+}
+.preview-screen > footer {
+  padding: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.5rem;
 }
 .publish-button {
   margin-top: 20px;
