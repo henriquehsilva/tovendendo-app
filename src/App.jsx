@@ -1027,7 +1027,15 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [likesCount, setLikesCount] = useState(Number(product.likesCount) || 0);
   const [liked, setLiked] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [zoom, setZoom] = useState({ visible: false, x: 50, y: 50 });
+  const [zoom, setZoom] = useState({
+    visible: false,
+    x: 50,
+    y: 50,
+    pixelX: 0,
+    pixelY: 0,
+    width: 0,
+    height: 0,
+  });
   const [zoomOpen, setZoomOpen] = useState(false);
   const move = (direction) =>
     setCurrent((index) => (index + direction + images.length) % images.length);
@@ -1043,6 +1051,10 @@ function ProductCard({ store, product, quantity, onChange }) {
         0,
         Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100),
       ),
+      pixelX: Math.max(0, Math.min(bounds.width, event.clientX - bounds.left)),
+      pixelY: Math.max(0, Math.min(bounds.height, event.clientY - bounds.top)),
+      width: bounds.width,
+      height: bounds.height,
     });
   };
   useEffect(
@@ -1270,10 +1282,19 @@ function ProductCard({ store, product, quantity, onChange }) {
                   style={{
                     left: `${zoom.x}%`,
                     top: `${zoom.y}%`,
-                    backgroundImage: `url(${images[Math.min(current, images.length - 1)]})`,
-                    backgroundPosition: `${zoom.x}% ${zoom.y}%`,
                   }}
-                />
+                >
+                  <img
+                    src={images[Math.min(current, images.length - 1)]}
+                    alt=""
+                    style={{
+                      width: `${zoom.width * 3}px`,
+                      height: `${zoom.height * 3}px`,
+                      left: `${90 - zoom.pixelX * 3}px`,
+                      top: `${90 - zoom.pixelY * 3}px`,
+                    }}
+                  />
+                </span>
               )}
             </div>
             <p>{product.name}</p>
