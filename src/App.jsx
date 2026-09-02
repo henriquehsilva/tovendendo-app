@@ -784,8 +784,19 @@ function Admin({ user, onLogout }) {
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
-  const [mercadoPagoToken, setMercadoPagoToken] = useState("");
   const [loadError, setLoadError] = useState("");
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (!params.has("mp")) return;
+    setTab("payment");
+    setSaved(
+      params.get("message") ||
+        (params.get("mp") === "connected"
+          ? "Conta Mercado Pago conectada ✓"
+          : "Não foi possível conectar a conta."),
+    );
+    history.replaceState({}, "", location.pathname);
+  }, []);
   useEffect(() => {
     if (!user) return;
     if (!firebaseEnabled) {
@@ -932,50 +943,6 @@ function Admin({ user, onLogout }) {
       location.href = data.authorizationUrl;
     } catch (err) {
       setSaved(err.message);
-    }
-  };
-  const connectWithToken = async () => {
-    if (!store.id) {
-      setSaved("Salve a loja antes de conectar o Mercado Pago.");
-      return;
-    }
-    if (!mercadoPagoToken.trim()) {
-      setSaved("Informe o Access Token da conta Mercado Pago da loja.");
-      return;
-    }
-    setSaving(true);
-    setSaved("");
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/.netlify/functions/mercadopago-token", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          storeId: store.id,
-          accessToken: mercadoPagoToken.trim(),
-        }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(data.error || "Não foi possível validar a credencial.");
-      setStore((current) => ({
-        ...current,
-        payment: {
-          ...current.payment,
-          connected: true,
-          enabled: true,
-          merchantUserId: data.merchantUserId,
-        },
-      }));
-      setMercadoPagoToken("");
-      setSaved("Mercado Pago conectado com sucesso ✓");
-    } catch (error) {
-      setSaved(error.message);
-    } finally {
-      setSaving(false);
     }
   };
   const add = () => {
@@ -1209,37 +1176,15 @@ function Admin({ user, onLogout }) {
                 </div>
                 <button className="button outline" onClick={connect}>
                   {store.payment?.connected
-                    ? "Reconectar"
-                    : "Conectar Mercado Pago"}
+                    ? "Trocar conta conectada"
+                    : "Conectar minha conta Mercado Pago"}
                 </button>
               </div>
-              {!store.payment?.connected && (
-                <div className="token-connection">
-                  <label>
-                    <span>Access Token da conta da loja</span>
-                    <input
-                      type="password"
-                      autoComplete="off"
-                      placeholder="APP_USR-... ou TEST-..."
-                      value={mercadoPagoToken}
-                      onChange={(event) =>
-                        setMercadoPagoToken(event.target.value)
-                      }
-                    />
-                  </label>
-                  <button
-                    className="button primary"
-                    disabled={saving}
-                    onClick={connectWithToken}
-                  >
-                    {saving ? "Validando…" : "Conectar com Access Token"}
-                  </button>
-                  <small>
-                    A credencial é validada e enviada diretamente ao servidor.
-                    Ela nunca é exibida novamente.
-                  </small>
-                </div>
-              )}
+              <p className="oauth-explanation">
+                Você será direcionado ao Mercado Pago para entrar e autorizar
+                esta loja. Cada lojista conecta sua própria conta e recebe as
+                vendas diretamente nela.
+              </p>
               <label className="switch">
                 <input
                   type="checkbox"
@@ -1272,8 +1217,8 @@ function Admin({ user, onLogout }) {
               <div className="notice">
                 <b>Credenciais protegidas</b>
                 <p>
-                  O painel nunca solicita nem exibe o Access Token da conta do
-                  lojista.
+                  O painel nunca solicita a senha ou o Access Token do lojista.
+                  A autorização acontece diretamente no Mercado Pago.
                 </p>
               </div>
             </>
