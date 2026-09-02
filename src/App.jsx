@@ -1027,8 +1027,24 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [likesCount, setLikesCount] = useState(Number(product.likesCount) || 0);
   const [liked, setLiked] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [zoom, setZoom] = useState({ visible: false, x: 50, y: 50 });
+  const [zoomOpen, setZoomOpen] = useState(false);
   const move = (direction) =>
     setCurrent((index) => (index + direction + images.length) % images.length);
+  const moveZoom = (event) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setZoom({
+      visible: true,
+      x: Math.max(
+        0,
+        Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100),
+      ),
+      y: Math.max(
+        0,
+        Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100),
+      ),
+    });
+  };
   useEffect(
     () => setLikesCount(Number(product.likesCount) || 0),
     [product.likesCount],
@@ -1112,11 +1128,40 @@ function ProductCard({ store, product, quantity, onChange }) {
         id={`produto-${product.id}`}
         className={`product-card ${productUnavailable(product) ? "sold-out" : ""}`}
       >
-        <div className="product-photo">
+        <div
+          className="product-photo"
+          onMouseMove={moveZoom}
+          onMouseLeave={() =>
+            setZoom((value) => ({ ...value, visible: false }))
+          }
+        >
           <img
             src={images[Math.min(current, images.length - 1)]}
             alt={`${product.name} — foto ${current + 1}`}
+            onClick={() => setZoomOpen(true)}
           />
+          <button
+            className="zoom-button"
+            aria-label="Ampliar imagem"
+            onClick={() => setZoomOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m16 16 5 5M8 11h6M11 8v6" />
+            </svg>
+          </button>
+          {zoom.visible && (
+            <span
+              className="zoom-lens"
+              aria-hidden="true"
+              style={{
+                left: `${zoom.x}%`,
+                top: `${zoom.y}%`,
+                backgroundImage: `url(${images[Math.min(current, images.length - 1)]})`,
+                backgroundPosition: `${zoom.x}% ${zoom.y}%`,
+              }}
+            />
+          )}
           {images.length > 1 && (
             <>
               <button
@@ -1145,7 +1190,9 @@ function ProductCard({ store, product, quantity, onChange }) {
               </div>
             </>
           )}
-          {productUnavailable(product) && <span>Indisponível</span>}
+          {productUnavailable(product) && (
+            <span className="availability-badge">Indisponível</span>
+          )}
         </div>
         <div className="product-copy">
           <small>{product.category || "Produto"}</small>
@@ -1211,6 +1258,25 @@ function ProductCard({ store, product, quantity, onChange }) {
           image={images[0]}
           onClose={() => setCommentsOpen(false)}
         />
+      )}
+      {zoomOpen && (
+        <div
+          className="modal-backdrop image-zoom-backdrop"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setZoomOpen(false)
+          }
+        >
+          <section className="image-zoom-modal">
+            <button className="modal-close" onClick={() => setZoomOpen(false)}>
+              ×
+            </button>
+            <img
+              src={images[Math.min(current, images.length - 1)]}
+              alt={`${product.name} ampliado`}
+            />
+            <p>{product.name}</p>
+          </section>
+        </div>
       )}
     </>
   );
