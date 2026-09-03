@@ -965,7 +965,7 @@ function StorePage() {
                     <path d="M2 10h20M6 15h4" />
                   </svg>
                   <span>
-                    <b>{paying ? "Abrindo Stripe…" : "Débito ou crédito"}</b>
+                    <b>{paying ? "Abrindo Stripe…" : "Cartão de crédito"}</b>
                     <small>Pagamento seguro pela Stripe</small>
                   </span>
                 </button>
