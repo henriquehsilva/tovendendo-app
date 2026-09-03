@@ -2876,6 +2876,15 @@ footer {
 .order-row em { min-width: 85px; color: #bf7b15; font-size: .65rem; font-style: normal; font-weight: 800; }
 .order-row .paid { color: #168466; }.order-row .waiting { color: #81909a; }
 .docs-share-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 16px; margin-top: 38px; }
+.docs-report { display: grid; grid-template-columns: .95fr 1.05fr; align-items: center; gap: 48px; }
+.docs-report-note { margin-top: 25px; padding: 16px 18px; border-left: 3px solid var(--blue-dark); border-radius: 0 8px 8px 0; background: var(--pale); color: #526879; font-size: .85rem; line-height: 1.6; }
+.closing-demo { padding: 22px; color: #102332; }
+.closing-demo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
+.closing-demo-head .product-logo { font-size: 1rem; }.closing-demo-head small { color: var(--muted); font-size: .55rem; font-weight: 800; letter-spacing: .08em; }
+.closing-demo-period { display: grid; gap: 4px; padding: 17px 0; }.closing-demo-period span { color: var(--muted); font-size: .65rem; }.closing-demo-period b { font-size: .9rem; }
+.closing-demo-totals { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 7px; }.closing-demo-totals article { display: grid; gap: 5px; padding: 11px; border-radius: 7px; background: var(--pale); }.closing-demo-totals small { color: var(--muted); font-size: .5rem; }.closing-demo-totals b { font-size: .78rem; }
+.closing-demo-table { margin-top: 15px; font-size: .62rem; }.closing-demo-table > div { display: grid; grid-template-columns: 1.45fr 1fr .8fr; gap: 7px; padding: 9px 5px; border-bottom: 1px solid var(--line); }.closing-demo-table > div:first-child { color: var(--muted); font-size: .55rem; }.closing-demo-table strong { text-align: right; }
+.closing-demo footer { padding: 14px 0 0; color: var(--muted); font-size: .52rem; }
 .share-card { grid-row: span 1; }
 .share-art { position: relative; height: 190px; padding: 22px; border-radius: 9px; background: linear-gradient(145deg,#1d3545,#6ccce8); color: white; font-size: 2.3rem; font-weight: 800; line-height: .86; letter-spacing: -.08em; }
 .share-art i { position: absolute; right: 22px; bottom: 20px; font-style: normal; }
@@ -2886,7 +2895,7 @@ footer {
 @media (max-width: 900px) {
   .docs-layout { grid-template-columns: 1fr; padding-top: 45px; }
   .docs-layout aside { display: none; }
-  .docs-showcase, .docs-payment-layout { grid-template-columns: 1fr; }
+  .docs-showcase, .docs-payment-layout, .docs-report { grid-template-columns: 1fr; }
   .docs-share-grid { grid-template-columns: 1fr 1fr; }.share-card { grid-column: 1/-1; }
 }
 @media (max-width: 640px) {

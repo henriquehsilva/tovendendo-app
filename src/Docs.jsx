@@ -7,6 +7,7 @@ const sections = [
   ["vitrine", "Vitrine e produtos"],
   ["checkout", "Vendas e pagamentos"],
   ["pedidos", "Gestão de pedidos"],
+  ["fechamento", "Fechamento e relatórios"],
   ["divulgacao", "Divulgação"],
 ];
 
@@ -40,6 +41,35 @@ function PaymentDemo() {
       <div className="demo-payment-result">
         {method === "pix" ? <><div className="fake-qr">▦</div><div><b>Pix gerado na hora</b><span>QR Code e código copia e cola</span></div></> : <><div className="stripe-s">S</div><div><b>Pagamento com Stripe</b><span>Cartão e carteiras compatíveis</span></div></>}
       </div>
+    </div>
+  );
+}
+
+function ClosingDemo() {
+  return (
+    <div className="docs-demo closing-demo">
+      <div className="closing-demo-head">
+        <Link className="product-logo" to="/">
+          <i>●</i> tô<span>vendendo</span>
+        </Link>
+        <small>FECHAMENTO DE PERÍODO</small>
+      </div>
+      <div className="closing-demo-period">
+        <span>01/09/2026 a 30/09/2026</span>
+        <b>Achadinhos da Ana</b>
+      </div>
+      <div className="closing-demo-totals">
+        <article><small>TOTAL VENDIDO</small><b>R$ 4.289,70</b></article>
+        <article><small>VENDAS</small><b>32</b></article>
+        <article><small>ITENS</small><b>47</b></article>
+      </div>
+      <div className="closing-demo-table">
+        <div><b>Comprador</b><b>Pagamento</b><b>Valor</b></div>
+        <div><span>Ana Souza</span><span>Pix</span><strong>R$ 219,80</strong></div>
+        <div><span>Rafael Melo</span><span>Cartão</span><strong>R$ 89,90</strong></div>
+        <div><span>Carla Lima</span><span>Pix</span><strong>R$ 174,50</strong></div>
+      </div>
+      <footer>Tô Vendendo · Feito para pequenos negócios.</footer>
     </div>
   );
 }
@@ -95,8 +125,24 @@ function Docs() {
               <div className="orders-demo"><div className="orders-top"><b>Pedidos recentes</b><span>⌕ Buscar pedidos</span></div><div className="order-row"><i>AS</i><div><b>Ana Souza</b><small>Bolsa urbana · 2 itens</small></div><strong>R$ 219,80</strong><em className="paid">● Pago</em></div><div className="order-row"><i>RM</i><div><b>Rafael Melo</b><small>Luminária · 1 item</small></div><strong>R$ 89,90</strong><em>● Revisar Pix</em></div><div className="order-row"><i>CL</i><div><b>Carla Lima</b><small>Kit autocuidado · 1 item</small></div><strong>R$ 74,50</strong><em className="waiting">● Aguardando</em></div></div>
             </section>
 
+            <section className="docs-section docs-report" id="fechamento">
+              <div>
+                <p className="eyebrow">05 · FECHAMENTO E RELATÓRIOS</p>
+                <h2>Transforme suas vendas em um relatório pronto.</h2>
+                <p className="docs-lead">Escolha uma data inicial e final no painel para gerar um PDF profissional com toda a movimentação paga do período.</p>
+                <ul className="docs-checks">
+                  <li><b>Resumo financeiro</b><span>Total vendido, quantidade de vendas e itens, separados entre Pix e cartão.</span></li>
+                  <li><b>Detalhamento completo</b><span>Data, comprador, contato, produtos, quantidades, preços e meio de pagamento.</span></li>
+                  <li><b>Observações do pedido</b><span>Comentários pertinentes registrados na venda também acompanham o fechamento.</span></li>
+                  <li><b>PDF com sua identidade</b><span>Documento paginado com a marca Tô Vendendo, link de acesso e rodapé oficial.</span></li>
+                </ul>
+                <p className="docs-report-note"><b>Como gerar:</b> acesse <strong>Painel → Fechamento</strong>, informe o período e clique em <strong>Baixar relatório em PDF</strong>. Apenas pagamentos confirmados entram nos valores.</p>
+              </div>
+              <ClosingDemo />
+            </section>
+
             <section className="docs-section" id="divulgacao">
-              <p className="eyebrow">05 · DIVULGAÇÃO</p><h2>Produtos prontos para circular.</h2>
+              <p className="eyebrow">06 · DIVULGAÇÃO</p><h2>Produtos prontos para circular.</h2>
               <div className="docs-share-grid"><article className="share-card"><div className="share-art">sua<br />marca<i>↗</i></div><h3>Compartilhamento visual</h3><p>Gere uma imagem do produto com marca, nome e preço para compartilhar pelo celular.</p></article><article><Icon>◍</Icon><h3>WhatsApp em um toque</h3><p>O link do produto abre uma conversa pronta, ideal para fechar vendas rapidamente.</p></article><article><Icon>♡</Icon><h3>Prova social</h3><p>Curtidas e comentários ficam visíveis na vitrine e aproximam clientes da sua marca.</p></article></div>
             </section>
           </div>
