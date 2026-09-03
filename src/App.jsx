@@ -1631,6 +1631,8 @@ function Admin({ user, onLogout }) {
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [salesSearch, setSalesSearch] = useState("");
+  const [salesPage, setSalesPage] = useState(1);
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1761,8 +1763,39 @@ function Admin({ user, onLogout }) {
   const updatePayment = (key, value) =>
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
   const categories = storeCategories(store, products);
-  const salesOrders = orders.filter(
-    (order) => order.provider === "pix" || order.status === "paid",
+  const filteredOrders = orders.filter((order) => {
+    const term = normalizeSearch(salesSearch);
+    if (!term) return true;
+    const status =
+      order.status === "paid"
+        ? "pagamento validado pago"
+        : order.status === "payment_review"
+          ? "revisar pagamento"
+          : order.provider === "pix"
+            ? "pendente de confirmacao"
+            : "aguardando stripe pendente";
+    return normalizeSearch(
+      [
+        order.id,
+        order.paymentIntentId,
+        order.customer?.name,
+        order.customer?.email,
+        order.customer?.phone,
+        order.provider === "pix" ? "pix" : "cartao stripe",
+        status,
+        ...(order.items || []).map((item) => item.name),
+      ].join(" "),
+    ).includes(term);
+  });
+  const salesPageSize = 10;
+  const salesPageCount = Math.max(
+    1,
+    Math.ceil(filteredOrders.length / salesPageSize),
+  );
+  const currentSalesPage = Math.min(salesPage, salesPageCount);
+  const paginatedOrders = filteredOrders.slice(
+    (currentSalesPage - 1) * salesPageSize,
+    currentSalesPage * salesPageSize,
   );
   const confirmPix = async (orderId) => {
     setSaving(true);
@@ -2361,9 +2394,37 @@ function Admin({ user, onLogout }) {
                 Pagamentos por cartão são validados automaticamente pela Stripe.
                 Confirme o Pix somente depois de conferir o recebimento.
               </p>
+              <label className="sales-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m16 16 5 5" />
+                </svg>
+                <input
+                  type="search"
+                  value={salesSearch}
+                  onChange={(event) => {
+                    setSalesSearch(event.target.value);
+                    setSalesPage(1);
+                  }}
+                  placeholder="Buscar cliente, produto, contato ou pagamento"
+                  aria-label="Buscar vendas"
+                />
+                {salesSearch && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSalesSearch("");
+                      setSalesPage(1);
+                    }}
+                    aria-label="Limpar busca"
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
               <div className="sales-list">
-                {salesOrders.length ? (
-                  salesOrders.map((order) => (
+                {paginatedOrders.length ? (
+                  paginatedOrders.map((order) => (
                     <article className="sale-card" key={order.id}>
                       <header>
                         <div>
@@ -2389,7 +2450,9 @@ function Admin({ user, onLogout }) {
                         <span>
                           {order.provider === "pix"
                             ? "Pix"
-                            : "Cartão · Stripe confirmado"}
+                            : order.status === "paid"
+                              ? "Cartão · Stripe confirmado"
+                              : "Cartão · Stripe"}
                         </span>
                         <span
                           className={`sale-status ${
@@ -2443,11 +2506,44 @@ function Admin({ user, onLogout }) {
                   ))
                 ) : (
                   <div className="empty-sales">
-                    <b>Nenhuma venda registrada</b>
-                    <span>Os pedidos aparecerão aqui após o checkout.</span>
+                    <b>
+                      {salesSearch
+                        ? "Nenhuma venda encontrada"
+                        : "Nenhuma venda registrada"}
+                    </b>
+                    <span>
+                      {salesSearch
+                        ? "Tente buscar usando outro termo."
+                        : "Os pedidos aparecerão aqui após o checkout."}
+                    </span>
                   </div>
                 )}
               </div>
+              {filteredOrders.length > salesPageSize && (
+                <nav
+                  className="sales-pagination"
+                  aria-label="Páginas de vendas"
+                >
+                  <button
+                    type="button"
+                    disabled={currentSalesPage === 1}
+                    onClick={() => setSalesPage((page) => page - 1)}
+                  >
+                    ← Anterior
+                  </button>
+                  <span>
+                    Página {currentSalesPage} de {salesPageCount} ·{" "}
+                    {filteredOrders.length} vendas
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentSalesPage === salesPageCount}
+                    onClick={() => setSalesPage((page) => page + 1)}
+                  >
+                    Próxima →
+                  </button>
+                </nav>
+              )}
             </>
           )}
           {tab === "publish" && (
