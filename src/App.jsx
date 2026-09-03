@@ -1069,6 +1069,11 @@ function StorePage() {
                   <div>
                     <b>{p.name}</b>
                     <small>{money(p.price)} cada</small>
+                    {(cart[p.id] || 0) >= productStock(p) && (
+                      <small className="stock-limit-message">
+                        Limite do estoque atingido
+                      </small>
+                    )}
                   </div>
                   <div className="quantity">
                     <button onClick={() => change(p, -1)}>−</button>
@@ -1542,6 +1547,11 @@ function ProductCard({ store, product, quantity, onChange }) {
               {productStock(product)} {productStock(product) === 1
                 ? "unidade disponível"
                 : "unidades disponíveis"}
+            </small>
+          )}
+          {quantity > 0 && quantity >= productStock(product) && (
+            <small className="stock-limit-message">
+              Limite do estoque atingido
             </small>
           )}
           <div className="product-bottom">
@@ -2140,6 +2150,23 @@ function Admin({ user, onLogout }) {
       setTab("products");
       return null;
     }
+    const missingStock = products.find(
+      (product) =>
+        product.stock === "" ||
+        product.stock === undefined ||
+        product.stock === null ||
+        !Number.isInteger(Number(product.stock)) ||
+        Number(product.stock) < 0,
+    );
+    if (missingStock) {
+      setSaved(
+        `Informe a quantidade disponível do produto “${missingStock.name}”.`,
+      );
+      setSaving(false);
+      setTab("products");
+      editProduct(missingStock);
+      return null;
+    }
     let persistedStoreId = store.id || null;
     try {
       if (firebaseEnabled) {
@@ -2245,6 +2272,16 @@ function Admin({ user, onLogout }) {
     }
     if (!(Number(product.price) > 0)) {
       setSaved("Informe um preço válido para o produto.");
+      return;
+    }
+    if (
+      product.stock === "" ||
+      product.stock === undefined ||
+      product.stock === null ||
+      !Number.isInteger(Number(product.stock)) ||
+      Number(product.stock) < 0
+    ) {
+      setSaved("Informe a quantidade disponível do produto.");
       return;
     }
     setProducts((current) =>
@@ -2590,7 +2627,8 @@ function Admin({ user, onLogout }) {
                             step="1"
                             inputMode="numeric"
                             value={productEditor.value.stock ?? ""}
-                            placeholder="Ilimitado"
+                            placeholder="0"
+                            required
                             onChange={(event) =>
                               changeProductDraft(
                                 "stock",
@@ -2681,7 +2719,7 @@ function Admin({ user, onLogout }) {
                         <span>
                           {money(product.price)} · {Number.isFinite(productStock(product))
                             ? `${productStock(product)} em estoque`
-                            : "Estoque ilimitado"}
+                            : "Quantidade não definida"}
                         </span>
                       </div>
                       <span
