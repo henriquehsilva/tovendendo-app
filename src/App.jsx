@@ -38,6 +38,33 @@ const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     Number(value) || 0,
   );
+const orderDate = (value) => {
+  const date = value?.toDate?.() || (value ? new Date(value) : null);
+  return date && !Number.isNaN(date.getTime())
+    ? new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(date)
+    : "Agora";
+};
+const normalizeCustomer = (customer) => ({
+  name: String(customer.name || "")
+    .trim()
+    .replace(/\s+/g, " "),
+  email: String(customer.email || "")
+    .trim()
+    .toLowerCase(),
+  phone: String(customer.phone || "").replace(/\D/g, ""),
+});
+const customerError = (customer) => {
+  const value = normalizeCustomer(customer);
+  if (value.name.length < 3) return "Informe o nome completo.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.email))
+    return "Informe um e-mail válido.";
+  if (value.phone.length < 10 || value.phone.length > 13)
+    return "Informe um telefone ou WhatsApp válido, com DDD.";
+  return "";
+};
 const normalizeSearch = (value) =>
   String(value || "")
     .normalize("NFD")
@@ -583,6 +610,7 @@ function StorePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [pixPayment, setPixPayment] = useState(null);
+  const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
@@ -703,25 +731,52 @@ function StorePage() {
       setError("A loja ainda não configurou uma chave Pix.");
       return;
     }
+    const validationError = customerError(customer);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setPaying(true);
     setError("");
     try {
+      let confirmedTotal = total;
+      let orderId = "";
+      const items = purchasable
+        .filter((product) => cart[product.id])
+        .map((product) => ({ id: product.id, quantity: cart[product.id] }));
+      if (firebaseEnabled) {
+        const response = await fetch("/.netlify/functions/create-pix-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storeId: store.id,
+            items,
+            customer: normalizeCustomer(customer),
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok)
+          throw new Error(data.error || "Não foi possível criar o pedido Pix.");
+        confirmedTotal = Number(data.total);
+        orderId = data.orderId;
+      }
       const payload = createPixPayload({
         key: store.payment.pixKey,
         name: store.payment.pixReceiverName || store.brand,
         city: store.payment.pixCity || store.address,
-        amount: total,
+        amount: confirmedTotal,
       });
       const qrCode = await QRCode.toDataURL(payload, {
         width: 360,
         margin: 2,
         color: { dark: "#12202d", light: "#ffffff" },
       });
-      setPixPayment({ payload, qrCode });
+      setPixPayment({ payload, qrCode, total: confirmedTotal, orderId });
       setCartOpen(false);
     } catch (err) {
       setError(
-        "Não foi possível gerar o Pix. Confira os dados de pagamento da loja.",
+        err.message ||
+          "Não foi possível gerar o Pix. Confira os dados de pagamento da loja.",
       );
     } finally {
       setPaying(false);
@@ -732,6 +787,11 @@ function StorePage() {
       .filter((product) => cart[product.id])
       .map((product) => ({ id: product.id, quantity: cart[product.id] }));
     if (!items.length) return;
+    const validationError = customerError(customer);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setPaying(true);
     setError("");
     try {
@@ -740,7 +800,11 @@ function StorePage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ storeId: store.id, items }),
+          body: JSON.stringify({
+            storeId: store.id,
+            items,
+            customer: normalizeCustomer(customer),
+          }),
         },
       );
       const data = await response.json().catch(() => ({}));
@@ -931,6 +995,47 @@ function StorePage() {
               <span>Total</span>
               <b>{money(total)}</b>
             </div>
+            <div className="checkout-customer">
+              <p>Dados do cliente</p>
+              <input
+                value={customer.name}
+                onChange={(event) =>
+                  setCustomer((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+                placeholder="Nome completo"
+                autoComplete="name"
+                maxLength="100"
+              />
+              <input
+                type="email"
+                value={customer.email}
+                onChange={(event) =>
+                  setCustomer((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+                placeholder="E-mail"
+                autoComplete="email"
+                maxLength="160"
+              />
+              <input
+                type="tel"
+                value={customer.phone}
+                onChange={(event) =>
+                  setCustomer((current) => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
+                }
+                placeholder="Telefone / WhatsApp com DDD"
+                autoComplete="tel"
+                maxLength="20"
+              />
+            </div>
             <div className="checkout-methods">
               {store.payment?.enabled && (
                 <>
@@ -991,7 +1096,7 @@ function StorePage() {
       {pixPayment && (
         <PixModal
           store={store}
-          total={total}
+          total={pixPayment.total}
           payment={pixPayment}
           onClose={() => setPixPayment(null)}
         />
@@ -1525,6 +1630,7 @@ function CommentsModal({ store, product, image, onClose }) {
 function Admin({ user, onLogout }) {
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1555,6 +1661,24 @@ function Admin({ user, onLogout }) {
         );
       });
   }, [user]);
+  useEffect(() => {
+    if (!firebaseEnabled || !store?.id || !user) return undefined;
+    return onSnapshot(
+      collection(db, "stores", store.id, "orders"),
+      (snapshot) =>
+        setOrders(
+          snapshot.docs
+            .map((item) => ({ id: item.id, ...item.data() }))
+            .sort(
+              (a, b) =>
+                (b.createdAt?.toMillis?.() || 0) -
+                (a.createdAt?.toMillis?.() || 0),
+            ),
+        ),
+      (error) =>
+        setSaved(`Não foi possível carregar as vendas: ${error.message}`),
+    );
+  }, [store?.id, user]);
   useEffect(() => {
     const stripeReturn = new URLSearchParams(location.search).get("stripe");
     const hasStripeAccount = Boolean(
@@ -1637,6 +1761,29 @@ function Admin({ user, onLogout }) {
   const updatePayment = (key, value) =>
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
   const categories = storeCategories(store, products);
+  const confirmPix = async (orderId) => {
+    setSaving(true);
+    setSaved("Confirmando pagamento Pix…");
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/.netlify/functions/confirm-pix-order", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ storeId: store.id, orderId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.error || "Não foi possível confirmar o Pix.");
+      setSaved("Pagamento Pix confirmado ✓");
+    } catch (error) {
+      setSaved(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
   const connectStripe = async () => {
     const storeId = store.id || (await save({}, false));
     if (!storeId) return;
@@ -1882,7 +2029,8 @@ function Admin({ user, onLogout }) {
             ["categories", "02 · Categorias"],
             ["products", "03 · Produtos"],
             ["payment", "04 · Pagamentos"],
-            ["publish", "05 · Publicar"],
+            ["sales", "05 · Vendas"],
+            ["publish", "06 · Publicar"],
           ].map((x) => (
             <button
               key={x[0]}
@@ -2202,6 +2350,96 @@ function Admin({ user, onLogout }) {
               </div>
             </>
           )}
+          {tab === "sales" && (
+            <>
+              <p className="eyebrow">CHECKOUT E PEDIDOS</p>
+              <h1>Vendas da loja.</h1>
+              <p className="admin-help">
+                Pagamentos por cartão são validados automaticamente pela Stripe.
+                Confirme o Pix somente depois de conferir o recebimento.
+              </p>
+              <div className="sales-list">
+                {orders.length ? (
+                  orders.map((order) => (
+                    <article className="sale-card" key={order.id}>
+                      <header>
+                        <div>
+                          <b>
+                            {order.customer?.name || "Cliente não informado"}
+                          </b>
+                          <small>{orderDate(order.createdAt)}</small>
+                        </div>
+                        <strong>
+                          {money(
+                            order.total ??
+                              (order.items || []).reduce(
+                                (sum, item) =>
+                                  sum +
+                                  Number(item.unitPrice) *
+                                    Number(item.quantity),
+                                0,
+                              ),
+                          )}
+                        </strong>
+                      </header>
+                      <div className="sale-meta">
+                        <span>
+                          {order.provider === "pix" ? "Pix" : "Cartão"}
+                        </span>
+                        <span
+                          className={`sale-status ${
+                            order.status === "paid" ? "paid" : "pending"
+                          }`}
+                        >
+                          {order.status === "paid"
+                            ? "Pagamento validado"
+                            : order.status === "payment_review"
+                              ? "Revisar pagamento"
+                              : order.provider === "pix"
+                                ? "Pendente de confirmação"
+                                : "Aguardando Stripe"}
+                        </span>
+                      </div>
+                      <div className="sale-contact">
+                        <a href={`mailto:${order.customer?.email || ""}`}>
+                          {order.customer?.email || "E-mail não informado"}
+                        </a>
+                        <a
+                          href={`https://wa.me/${String(order.customer?.phone || "").replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {order.customer?.phone || "Telefone não informado"}
+                        </a>
+                      </div>
+                      <ul>
+                        {(order.items || []).map((item) => (
+                          <li key={item.productId}>
+                            {item.quantity}× {item.name} —{" "}
+                            {money(item.unitPrice)}
+                          </li>
+                        ))}
+                      </ul>
+                      {order.provider === "pix" && order.status !== "paid" && (
+                        <button
+                          className="button primary small"
+                          disabled={saving}
+                          onClick={() => confirmPix(order.id)}
+                        >
+                          Marcar pagamento como validado
+                        </button>
+                      )}
+                    </article>
+                  ))
+                ) : (
+                  <div className="empty-sales">
+                    <b>Nenhuma venda registrada</b>
+                    <span>Os pedidos aparecerão aqui após o checkout.</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
           {tab === "publish" && (
             <>
               <p className="eyebrow">ÚLTIMA ETAPA</p>
@@ -2230,16 +2468,23 @@ function Admin({ user, onLogout }) {
               </button>
             </>
           )}
-          <div className="editor-actions">
-            <button
-              className="button primary"
-              disabled={saving}
-              onClick={() => save()}
-            >
-              {saving ? "Salvando…" : "Salvar alterações"}
-            </button>
-            {saved && <span>{saved}</span>}
-          </div>
+          {tab !== "sales" && (
+            <div className="editor-actions">
+              <button
+                className="button primary"
+                disabled={saving}
+                onClick={() => save()}
+              >
+                {saving ? "Salvando…" : "Salvar alterações"}
+              </button>
+              {saved && <span>{saved}</span>}
+            </div>
+          )}
+          {tab === "sales" && saved && (
+            <div className="editor-actions sales-message">
+              <span>{saved}</span>
+            </div>
+          )}
         </main>
         <AdminPreview store={store} products={products} />
       </div>

@@ -1,0 +1,20 @@
+export const cleanCustomer = (customer = {}) => ({
+  name: String(customer.name || "")
+    .trim()
+    .replace(/\s+/g, " "),
+  email: String(customer.email || "")
+    .trim()
+    .toLowerCase(),
+  phone: String(customer.phone || "").replace(/\D/g, ""),
+});
+
+export const validCustomer = (customer) =>
+  customer.name.length >= 3 &&
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email) &&
+  customer.phone.length >= 10 &&
+  customer.phone.length <= 13;
+
+export const safeQuantity = (value) =>
+  Math.max(1, Math.min(99, Math.floor(Number(value)) || 1));
+
+export const priceInCents = (value) => Math.round(Number(value) * 100);

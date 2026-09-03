@@ -832,6 +832,29 @@ footer {
   font-size: 1.2rem;
   padding: 22px 0;
 }
+.checkout-customer {
+  display: grid;
+  gap: 9px;
+  margin: 14px 0;
+}
+.checkout-customer p {
+  margin: 0;
+  font-weight: 800;
+}
+.checkout-customer input {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  box-sizing: border-box;
+}
+.checkout-customer input:focus {
+  outline: 2px solid color-mix(in srgb, var(--blue-dark) 35%, transparent);
+  border-color: var(--blue-dark);
+}
 .secure {
   display: block;
   text-align: center;
@@ -1133,6 +1156,90 @@ footer {
 .product-editors {
   display: grid;
   gap: 18px;
+}
+.admin-help {
+  color: var(--muted);
+  max-width: 680px;
+}
+.sales-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+.sale-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+}
+.sale-card header,
+.sale-meta,
+.sale-contact {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.sale-card header div {
+  display: grid;
+  gap: 3px;
+}
+.sale-card header small,
+.sale-contact,
+.sale-card li {
+  color: var(--muted);
+}
+.sale-card header strong {
+  font-size: 1.15rem;
+}
+.sale-meta {
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-weight: 800;
+}
+.sale-status {
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+.sale-status.paid {
+  color: #146c43;
+  background: #dff5e9;
+}
+.sale-status.pending {
+  color: #885b00;
+  background: #fff1c7;
+}
+.sale-contact {
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+.sale-contact a {
+  color: inherit;
+}
+.sale-card ul {
+  margin: 12px 0;
+  padding-left: 20px;
+}
+.sale-card li {
+  margin: 4px 0;
+}
+.empty-sales {
+  display: grid;
+  gap: 5px;
+  padding: 30px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+}
+.empty-sales b {
+  color: var(--ink);
+}
+.sales-message {
+  justify-content: flex-start;
 }
 .product-editor {
   display: grid;

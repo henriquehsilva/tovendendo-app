@@ -1,13 +1,22 @@
 import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
+import {
+  cleanCustomer,
+  priceInCents,
+  safeQuantity,
+  validCustomer,
+} from "./_orders.js";
 
 export default async function (request) {
   if (request.method !== "POST")
     return json(405, { error: "Método não permitido." });
   try {
-    const { storeId, items } = await request.json();
+    const { storeId, items, customer: rawCustomer } = await request.json();
+    const customer = cleanCustomer(rawCustomer);
     if (!storeId || !Array.isArray(items) || !items.length)
       return json(400, { error: "Sacola inválida." });
+    if (!validCustomer(customer))
+      return json(400, { error: "Preencha nome, e-mail e WhatsApp válidos." });
     const admin = firebaseAdmin(),
       firestore = admin.firestore(),
       storeSnap = await firestore.doc(`stores/${storeId}`).get();
@@ -40,19 +49,24 @@ export default async function (request) {
       });
     const lineItems = [],
       orderItems = [];
+    let totalCents = 0;
     for (const requested of items) {
       const product = await firestore
           .doc(`stores/${storeId}/products/${requested.id}`)
           .get(),
         data = product.data(),
-        quantity = Math.max(1, Math.floor(Number(requested.quantity)));
+        quantity = safeQuantity(requested.quantity);
       if (!product.exists || data.unavailable === true || data.active === false)
         throw new Error(`${data?.name || "Um produto"} está indisponível.`);
+      const unitPriceCents = priceInCents(data.price);
+      if (!Number.isSafeInteger(unitPriceCents) || unitPriceCents <= 0)
+        throw new Error(`${data.name || "Um produto"} possui preço inválido.`);
+      totalCents += unitPriceCents * quantity;
       lineItems.push({
         quantity,
         price_data: {
           currency: "brl",
-          unit_amount: Math.round(Number(data.price) * 100),
+          unit_amount: unitPriceCents,
           product_data: {
             name: data.name,
             description: String(data.description || "").slice(0, 500),
@@ -66,14 +80,18 @@ export default async function (request) {
         productId: product.id,
         name: data.name,
         quantity,
-        unitPrice: Number(data.price),
+        unitPrice: unitPriceCents / 100,
       });
     }
     const orderRef = firestore.collection(`stores/${storeId}/orders`).doc();
     await orderRef.set({
       items: orderItems,
+      customer,
+      total: totalCents / 100,
+      totalCents,
       status: "pending",
       provider: "stripe",
+      stripeAccountId: accountId,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     const origin = process.env.APP_URL || request.headers.get("origin");
@@ -85,7 +103,12 @@ export default async function (request) {
         success_url: `${origin}/loja/${store.slug}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/loja/${store.slug}?payment=cancelled`,
         customer_creation: "always",
+        customer_email: customer.email,
+        phone_number_collection: { enabled: true },
         metadata: { storeId, orderId: orderRef.id },
+        payment_intent_data: {
+          metadata: { storeId, orderId: orderRef.id },
+        },
       },
       { stripeAccount: accountId },
     );

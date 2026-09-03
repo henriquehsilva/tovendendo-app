@@ -10,7 +10,12 @@ export default async function (request) {
       signature,
       process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
     );
-    if (stripeEvent.type !== "checkout.session.completed")
+    if (
+      ![
+        "checkout.session.completed",
+        "checkout.session.async_payment_succeeded",
+      ].includes(stripeEvent.type)
+    )
       return json(200, { received: true });
     const session = stripeEvent.data.object,
       { storeId, orderId } = session.metadata || {};
@@ -21,9 +26,30 @@ export default async function (request) {
     await firestore.runTransaction(async (transaction) => {
       const order = await transaction.get(orderRef);
       if (!order.exists || order.data().status === "paid") return;
+      const data = order.data();
+      const validPayment =
+        data.provider === "stripe" &&
+        session.payment_status === "paid" &&
+        Number(data.totalCents) === Number(session.amount_total) &&
+        (!stripeEvent.account || data.stripeAccountId === stripeEvent.account);
+      if (!validPayment) {
+        transaction.update(orderRef, {
+          status: "payment_review",
+          validationError:
+            "Os dados recebidos da Stripe não conferem com o pedido.",
+        });
+        return;
+      }
       transaction.update(orderRef, {
         status: "paid",
         paymentIntentId: session.payment_intent,
+        checkoutSessionId: session.id,
+        stripePaymentStatus: session.payment_status,
+        customer: {
+          name: session.customer_details?.name || data.customer?.name || "",
+          email: session.customer_details?.email || data.customer?.email || "",
+          phone: session.customer_details?.phone || data.customer?.phone || "",
+        },
         paidAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });
