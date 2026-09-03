@@ -32,8 +32,14 @@ import {
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import QRCode from "qrcode";
 import { auth, db, firebaseEnabled, googleProvider, storage } from "./firebase";
-import { demoProducts, demoStore, emptyStore } from "./data";
+import {
+  demoMarketplaceStores,
+  demoProducts,
+  demoStore,
+  emptyStore,
+} from "./data";
 import Docs from "./Docs";
+import Marketplace from "./Marketplace";
 
 const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -242,6 +248,7 @@ function Landing() {
       <header className="marketing-nav">
         <Logo />
         <nav>
+          <Link to="/lojas">Lojas</Link>
           <Link to="/doc">Recursos</Link>
           <Link to="/admin/login">Entrar</Link>
           <Link className="button primary small" to="/admin">
@@ -633,17 +640,20 @@ function StorePage() {
   useEffect(() => {
     if (!firebaseEnabled) {
       const saved = localStore();
+      const marketplaceStore = demoMarketplaceStores.find(
+        (item) => item.slug === slug,
+      );
       setStore(
         saved?.slug === slug
           ? saved
           : slug === demoStore.slug
             ? demoStore
-            : null,
+            : marketplaceStore || null,
       );
       setProducts(
         saved?.slug === slug
           ? localProducts() || []
-          : slug === demoStore.slug
+          : slug === demoStore.slug || marketplaceStore
             ? demoProducts
             : [],
       );
@@ -3009,6 +3019,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/doc" element={<Docs />} />
+      <Route path="/lojas" element={<Marketplace />} />
       <Route path="/loja/:slug" element={<StorePage />} />
       <Route path="/admin/login" element={<Login user={user} />} />
       <Route path="/admin" element={<Admin user={user} onLogout={logout} />} />

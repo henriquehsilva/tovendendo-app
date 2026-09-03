@@ -54,7 +54,7 @@ function Docs() {
     <div className="docs-page">
       <header className="docs-nav">
         <Link className="product-logo" to="/"><i>●</i> tô<span>vendendo</span></Link>
-        <nav><a href="#recursos">Recursos</a><Link to="/admin/login">Entrar</Link><Link className="button primary small" to="/admin">Criar minha loja</Link></nav>
+        <nav><Link to="/lojas">Lojas</Link><a href="#recursos">Recursos</a><Link to="/admin/login">Entrar</Link><Link className="button primary small" to="/admin">Criar minha loja</Link></nav>
       </header>
 
       <main>
