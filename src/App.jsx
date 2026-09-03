@@ -880,6 +880,22 @@ function StorePage() {
               </button>
             )}
           </label>
+          {categories.length > 0 && (
+            <label className="store-category-select">
+              <span>Filtrar por categoria</span>
+              <select
+                value={activeCategory}
+                onChange={(event) => setActiveCategory(event.target.value)}
+              >
+                <option value="all">Todas as categorias</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {categories.length > 1 && (
             <div className="category-filter" aria-label="Categorias">
               <button
@@ -1088,6 +1104,10 @@ function StorePage() {
               )}
             <small className="secure">
               Escolha como deseja concluir o pagamento.
+            </small>
+            <small className="installment-note">
+              parcelamentos serão processados apenas no pagamento presencial na
+              loja pela maquininha. obs.: será cobrada a taxa da maquininha.
             </small>
             {error && <p className="error">{error}</p>}
           </section>
