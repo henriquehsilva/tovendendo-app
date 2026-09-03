@@ -2106,11 +2106,6 @@ function Admin({ user, onLogout }) {
             <span />
             <span />
           </button>
-          {store.slug && (
-            <Link to={`/loja/${store.slug}`} target="_blank">
-              Ver loja ↗
-            </Link>
-          )}
           <button className="text-button" onClick={onLogout}>
             Sair
           </button>
@@ -2702,7 +2697,23 @@ function Admin({ user, onLogout }) {
             </div>
           )}
         </main>
-        <AdminPreview store={store} products={products} />
+        <aside className="live-preview-sidebar">
+          {store.slug && (
+            <Link
+              to={`/loja/${store.slug}`}
+              target="_blank"
+              className="view-store-button"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              Ver loja
+            </Link>
+          )}
+          <AdminPreview store={store} products={products} />
+        </aside>
       </div>
     </div>
   );
