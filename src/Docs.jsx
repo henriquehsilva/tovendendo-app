@@ -49,10 +49,8 @@ function ClosingDemo() {
   return (
     <div className="docs-demo closing-demo">
       <div className="closing-demo-head">
-        <Link className="product-logo" to="/">
-          <i>●</i> tô<span>vendendo</span>
-        </Link>
-        <small>FECHAMENTO DE PERÍODO</small>
+        <b>Fechamento de período</b>
+        <small>RELATÓRIO FINANCEIRO</small>
       </div>
       <div className="closing-demo-period">
         <span>01/09/2026 a 30/09/2026</span>
@@ -133,8 +131,8 @@ function Docs() {
                 <ul className="docs-checks">
                   <li><b>Resumo financeiro</b><span>Total vendido, quantidade de vendas e itens, separados entre Pix e cartão.</span></li>
                   <li><b>Detalhamento completo</b><span>Data, comprador, contato, produtos, quantidades, preços e meio de pagamento.</span></li>
-                  <li><b>Observações do pedido</b><span>Comentários pertinentes registrados na venda também acompanham o fechamento.</span></li>
-                  <li><b>PDF com sua identidade</b><span>Documento paginado com a marca Tô Vendendo, link de acesso e rodapé oficial.</span></li>
+                  <li><b>Separação por pagamento</b><span>Veja com clareza quanto entrou por Pix e quanto foi processado por cartão.</span></li>
+                  <li><b>PDF organizado</b><span>Documento paginado com link de acesso e rodapé oficial da plataforma.</span></li>
                 </ul>
                 <p className="docs-report-note"><b>Como gerar:</b> acesse <strong>Painel → Fechamento</strong>, informe o período e clique em <strong>Baixar relatório em PDF</strong>. Apenas pagamentos confirmados entram nos valores.</p>
               </div>

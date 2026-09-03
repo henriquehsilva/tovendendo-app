@@ -2880,7 +2880,7 @@ footer {
 .docs-report-note { margin-top: 25px; padding: 16px 18px; border-left: 3px solid var(--blue-dark); border-radius: 0 8px 8px 0; background: var(--pale); color: #526879; font-size: .85rem; line-height: 1.6; }
 .closing-demo { padding: 22px; color: #102332; }
 .closing-demo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
-.closing-demo-head .product-logo { font-size: 1rem; }.closing-demo-head small { color: var(--muted); font-size: .55rem; font-weight: 800; letter-spacing: .08em; }
+.closing-demo-head > b { font-size: .9rem; }.closing-demo-head small { color: var(--muted); font-size: .55rem; font-weight: 800; letter-spacing: .08em; }
 .closing-demo-period { display: grid; gap: 4px; padding: 17px 0; }.closing-demo-period span { color: var(--muted); font-size: .65rem; }.closing-demo-period b { font-size: .9rem; }
 .closing-demo-totals { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 7px; }.closing-demo-totals article { display: grid; gap: 5px; padding: 11px; border-radius: 7px; background: var(--pale); }.closing-demo-totals small { color: var(--muted); font-size: .5rem; }.closing-demo-totals b { font-size: .78rem; }
 .closing-demo-table { margin-top: 15px; font-size: .62rem; }.closing-demo-table > div { display: grid; grid-template-columns: 1.45fr 1fr .8fr; gap: 7px; padding: 9px 5px; border-bottom: 1px solid var(--line); }.closing-demo-table > div:first-child { color: var(--muted); font-size: .55rem; }.closing-demo-table strong { text-align: right; }

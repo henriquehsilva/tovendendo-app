@@ -15,33 +15,9 @@ const shortDate = (value) =>
     timeStyle: "short",
   }).format(asDate(value));
 
-const imageData = async (url) => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Não foi possível carregar a marca.");
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
-
-const orderNotes = (order) =>
-  String(
-    order.comments ||
-      order.comment ||
-      order.notes ||
-      order.note ||
-      order.customer?.notes ||
-      order.customer?.note ||
-      "—",
-  );
-
 export async function generatePeriodPdf({ store, orders, start, end, appUrl }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const summary = periodSummary(orders);
-  const logo = await imageData("/tovendendo-app-logo.png");
   const generatedAt = new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
@@ -63,17 +39,16 @@ export async function generatePeriodPdf({ store, orders, start, end, appUrl }) {
     doc.text(`Página ${pageNumber} de ${pages}`, 196, 288, { align: "right" });
   };
 
-  doc.addImage(logo, "PNG", 14, 12, 39, 13);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(18, 32, 45);
-  doc.text("Fechamento de período", 14, 37);
+  doc.text("Fechamento de período", 14, 20);
   doc.setFontSize(11);
-  doc.text(store.brand || "Minha loja", 14, 44);
+  doc.text(store.brand || "Minha loja", 14, 27);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(92, 110, 120);
-  doc.text(`Período: ${period}  ·  Gerado em ${generatedAt}`, 14, 50);
+  doc.text(`Período: ${period}  ·  Gerado em ${generatedAt}`, 14, 33);
 
   const cards = [
     ["TOTAL VENDIDO", brl(summary.total)],
@@ -84,19 +59,19 @@ export async function generatePeriodPdf({ store, orders, start, end, appUrl }) {
   cards.forEach(([label, value], index) => {
     const x = 14 + index * 46;
     doc.setFillColor(240, 248, 252);
-    doc.roundedRect(x, 57, 43, 21, 2, 2, "F");
+    doc.roundedRect(x, 40, 43, 21, 2, 2, "F");
     doc.setFontSize(7);
     doc.setTextColor(92, 110, 120);
-    doc.text(label, x + 3, 64);
+    doc.text(label, x + 3, 47);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(index === 3 ? 8 : 11);
     doc.setTextColor(18, 32, 45);
-    doc.text(value, x + 3, 72);
+    doc.text(value, x + 3, 55);
     doc.setFont("helvetica", "normal");
   });
 
   autoTable(doc, {
-    startY: 85,
+    startY: 68,
     margin: { left: 14, right: 14, bottom: 20 },
     head: [["Data", "Comprador", "Itens vendidos", "Pagamento", "Valor"]],
     body: orders.map((order) => [
@@ -126,17 +101,6 @@ export async function generatePeriodPdf({ store, orders, start, end, appUrl }) {
       3: { cellWidth: 28 },
       4: { cellWidth: 21, halign: "right" },
     },
-    alternateRowStyles: { fillColor: [247, 250, 251] },
-  });
-
-  autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 8,
-    margin: { left: 14, right: 14, bottom: 20 },
-    head: [["Pedido", "Comentários e observações pertinentes"]],
-    body: orders.map((order) => [String(order.id || "—"), orderNotes(order)]),
-    headStyles: { fillColor: [18, 32, 45], fontSize: 8 },
-    bodyStyles: { fontSize: 7.5, cellPadding: 2.5 },
-    columnStyles: { 0: { cellWidth: 48 } },
     alternateRowStyles: { fillColor: [247, 250, 251] },
   });
 

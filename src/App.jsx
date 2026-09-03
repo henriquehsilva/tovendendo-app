@@ -2716,7 +2716,7 @@ function Admin({ user, onLogout }) {
               <h1>Fechamento de período.</h1>
               <p className="admin-help">
                 Selecione as datas para baixar um PDF com as vendas pagas,
-                compradores, itens, meios de pagamento e observações registradas.
+                compradores, itens, valores e meios de pagamento.
               </p>
               <section className="closing-card">
                 <div className="closing-period">
