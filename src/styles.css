@@ -1161,6 +1161,9 @@ footer {
   color: var(--muted);
   max-width: 680px;
 }
+.sync-stripe {
+  margin-top: 8px;
+}
 .sales-search {
   display: grid;
   grid-template-columns: auto 1fr auto;

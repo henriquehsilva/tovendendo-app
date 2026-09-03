@@ -1824,6 +1824,33 @@ function Admin({ user, onLogout }) {
       setSaving(false);
     }
   };
+  const refreshStripeSales = async () => {
+    setSaving(true);
+    setSaved("Consultando pagamentos na Stripe…");
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/.netlify/functions/sync-stripe-orders", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ storeId: store.id }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.error || "Não foi possível consultar a Stripe.");
+      setSaved(
+        data.checked
+          ? `${data.updated} pagamento(s) consultado(s) na Stripe ✓`
+          : "Não há pagamentos Stripe pendentes para consultar.",
+      );
+    } catch (error) {
+      setSaved(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
   const connectStripe = async () => {
     const storeId = store.id || (await save({}, false));
     if (!storeId) return;
@@ -2398,6 +2425,13 @@ function Admin({ user, onLogout }) {
                 Pagamentos por cartão são validados automaticamente pela Stripe.
                 Confirme o Pix somente depois de conferir o recebimento.
               </p>
+              <button
+                className="button outline small sync-stripe"
+                disabled={saving || !store.id}
+                onClick={refreshStripeSales}
+              >
+                {saving ? "Consultando…" : "Atualizar pagamentos Stripe"}
+              </button>
               <label className="sales-search">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="7" />
