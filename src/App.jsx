@@ -293,19 +293,47 @@ function Logo() {
 
 function Landing() {
   const [pro, setPro] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
   return (
     <div>
-      <header className="marketing-nav">
+      <header className={`marketing-nav ${menuOpen ? "menu-open" : ""}`}>
         <Logo />
-        <nav>
-          <Link to="/lojas">Lojas</Link>
-          <Link to="/doc">Recursos</Link>
-          <Link to="/admin/login">Entrar</Link>
-          <Link className="button primary small" to="/admin">
+        <button
+          type="button"
+          className="marketing-menu-toggle"
+          aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+          aria-expanded={menuOpen}
+          aria-controls="marketing-menu"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+        <nav id="marketing-menu">
+          <Link to="/lojas" onClick={() => setMenuOpen(false)}>Lojas</Link>
+          <Link to="/doc" onClick={() => setMenuOpen(false)}>Recursos</Link>
+          <Link to="/admin/login" onClick={() => setMenuOpen(false)}>Entrar</Link>
+          <Link className="button primary small" to="/admin" onClick={() => setMenuOpen(false)}>
             Criar minha loja
           </Link>
         </nav>
       </header>
+      {menuOpen && (
+        <button
+          type="button"
+          className="marketing-menu-backdrop"
+          aria-label="Fechar menu"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
       <main>
         <section className="landing-hero">
           <div>
@@ -1052,16 +1080,10 @@ function StorePage() {
           </div>
         </section>
       </main>
-      <footer className="store-platform-footer">
-        <span>Loja criada com</span>
-        <a
-          href="https://tovendendo.app"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Conheça a plataforma Tô Vendendo"
-        >
-          https://tovendendo.app
-        </a>
+      <footer className="docs-footer">
+        <Logo />
+        <span>© 2026 Tô Vendendo · Feito para pequenos negócios.</span>
+        <Link to="/">Voltar ao início</Link>
       </footer>
       {count > 0 && (
         <button className="floating-cart" onClick={() => setCartOpen(true)}>
@@ -3336,8 +3358,8 @@ function AdminPreview({ store, products }) {
             <span>{store.payment?.stripeConnected ? "Cartão" : ""}</span>
           </section>
           <footer>
-            <span>© {new Date().getFullYear()} {store.brand || "Sua loja"}</span>
-            <small>Loja criada com tovendendo.app</small>
+            <b>tô vendendo</b>
+            <small>Feito para pequenos negócios.</small>
           </footer>
         </div>
       </div>
