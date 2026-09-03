@@ -1409,6 +1409,7 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [liked, setLiked] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [descriptionModalOpen, setDescriptionModalOpen] = useState(false);
   const plainDescription = stripDescriptionFormatting(product.description);
   const descriptionCanExpand =
     plainDescription.length > 100 ||
@@ -1447,6 +1448,24 @@ function ProductCard({ store, product, quantity, onChange }) {
     () => setLikesCount(Number(product.likesCount) || 0),
     [product.likesCount],
   );
+  useEffect(() => {
+    if (!descriptionModalOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setDescriptionModalOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [descriptionModalOpen]);
+  const showFullDescription = () => {
+    if (window.matchMedia("(max-width: 780px)").matches)
+      setDescriptionModalOpen(true);
+    else setDescriptionExpanded((expanded) => !expanded);
+  };
   const like = async () => {
     if (liked) return;
     let visitorId;
@@ -1589,8 +1608,9 @@ function ProductCard({ store, product, quantity, onChange }) {
             <button
               type="button"
               className="description-toggle"
-              aria-expanded={descriptionExpanded}
-              onClick={() => setDescriptionExpanded((expanded) => !expanded)}
+              aria-expanded={descriptionExpanded || descriptionModalOpen}
+              aria-haspopup="dialog"
+              onClick={showFullDescription}
             >
               {descriptionExpanded ? "Mostrar menos" : "Mostrar mais"}
             </button>
@@ -1685,6 +1705,43 @@ function ProductCard({ store, product, quantity, onChange }) {
           </div>
         </div>
       </article>
+      {descriptionModalOpen && (
+        <div
+          className="modal-backdrop product-description-backdrop"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget &&
+            setDescriptionModalOpen(false)
+          }
+        >
+          <section
+            className="product-description-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`description-title-${product.id}`}
+          >
+            <button
+              type="button"
+              className="modal-close"
+              onClick={() => setDescriptionModalOpen(false)}
+              aria-label="Fechar descrição"
+            >
+              ×
+            </button>
+            <img src={images[0]} alt={`Foto de ${product.name}`} />
+            <div>
+              <small>{product.category || "Produto"}</small>
+              <h2 id={`description-title-${product.id}`}>{product.name}</h2>
+              <div className="description-modal-price">
+                {productDiscount(product) > 0 && (
+                  <small>{money(product.price)}</small>
+                )}
+                <strong>{money(productCheckoutPrice(product))}</strong>
+              </div>
+              <ProductDescription value={product.description} />
+            </div>
+          </section>
+        </div>
+      )}
       {commentsOpen && (
         <CommentsModal
           store={store}
