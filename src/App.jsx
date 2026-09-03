@@ -387,7 +387,7 @@ function Landing() {
           </Link>
         </section>
       </main>
-      <footer>© 2026 Tô Vendendo · Feito para pequenos negócios.</footer>
+      <footer>© 2026 Tô Vendendo · Feito para bons negócios.</footer>
       <a
         className="landing-whatsapp"
         href="https://wa.me/5562985849729?text=Ol%C3%A1%21%20Gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20o%20T%C3%B4%20Vendendo."
@@ -1082,7 +1082,7 @@ function StorePage() {
       </main>
       <footer className="docs-footer">
         <Logo />
-        <span>© 2026 Tô Vendendo · Feito para pequenos negócios.</span>
+        <span>© 2026 Tô Vendendo · Feito para bons negócios.</span>
         <Link to="/">Voltar ao início</Link>
       </footer>
       {count > 0 && (
@@ -3359,7 +3359,7 @@ function AdminPreview({ store, products }) {
           </section>
           <footer>
             <b>tô vendendo</b>
-            <small>Feito para pequenos negócios.</small>
+            <small>Feito para bons negócios.</small>
           </footer>
         </div>
       </div>

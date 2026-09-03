@@ -32,7 +32,7 @@ export async function generatePeriodPdf({ store, orders, start, end, appUrl }) {
     doc.line(14, 282, 196, 282);
     doc.setFontSize(8);
     doc.setTextColor(92, 110, 120);
-    doc.text("Tô Vendendo · Feito para pequenos negócios.", 14, 288);
+    doc.text("Tô Vendendo · Feito para bons negócios.", 14, 288);
     doc.setTextColor(36, 125, 169);
     doc.textWithLink(appUrl, 14, 293, { url: appUrl });
     doc.setTextColor(92, 110, 120);

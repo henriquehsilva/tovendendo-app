@@ -67,7 +67,7 @@ function ClosingDemo() {
         <div><span>Rafael Melo</span><span>Cartão</span><strong>R$ 89,90</strong></div>
         <div><span>Carla Lima</span><span>Pix</span><strong>R$ 174,50</strong></div>
       </div>
-      <footer>Tô Vendendo · Feito para pequenos negócios.</footer>
+      <footer>Tô Vendendo · Feito para bons negócios.</footer>
     </div>
   );
 }
@@ -148,7 +148,7 @@ function Docs() {
 
         <section className="docs-final"><p className="eyebrow">COMECE HOJE</p><h2>Sua próxima venda pode começar aqui.</h2><p>Teste todos os recursos por 30 dias e publique sua loja sem precisar programar.</p><Link className="button light" to="/admin">Criar minha loja grátis →</Link></section>
       </main>
-      <footer className="docs-footer"><Link className="product-logo" to="/"><i>●</i> tô<span>vendendo</span></Link><span>© 2026 Tô Vendendo · Feito para pequenos negócios.</span><Link to="/">Voltar ao início</Link></footer>
+      <footer className="docs-footer"><Link className="product-logo" to="/"><i>●</i> tô<span>vendendo</span></Link><span>© 2026 Tô Vendendo · Feito para bons negócios.</span><Link to="/">Voltar ao início</Link></footer>
     </div>
   );
 }
