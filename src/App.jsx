@@ -1286,6 +1286,11 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [likesCount, setLikesCount] = useState(Number(product.likesCount) || 0);
   const [liked, setLiked] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const plainDescription = stripDescriptionFormatting(product.description);
+  const descriptionCanExpand =
+    plainDescription.length > 100 ||
+    String(product.description || "").split("\n").length > 2;
   const [zoom, setZoom] = useState({
     visible: false,
     x: 50,
@@ -1450,7 +1455,24 @@ function ProductCard({ store, product, quantity, onChange }) {
         <div className="product-copy">
           <small>{product.category || "Produto"}</small>
           <h3>{product.name}</h3>
-          <ProductDescription value={product.description} />
+          <div
+            className={[
+              "product-description-summary",
+              descriptionExpanded ? "expanded" : "",
+            ].join(" ")}
+          >
+            <ProductDescription value={product.description} />
+          </div>
+          {descriptionCanExpand && (
+            <button
+              type="button"
+              className="description-toggle"
+              aria-expanded={descriptionExpanded}
+              onClick={() => setDescriptionExpanded((expanded) => !expanded)}
+            >
+              {descriptionExpanded ? "Mostrar menos" : "Mostrar mais"}
+            </button>
+          )}
           <div className="product-bottom">
             <b>{money(product.price)}</b>
             {productUnavailable(product) ? (
