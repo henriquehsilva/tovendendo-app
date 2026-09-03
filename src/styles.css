@@ -1708,6 +1708,16 @@ footer {
     height: 64px;
     padding: 0 16px;
   }
+  .admin-top {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 40;
+  }
+  .admin .editor {
+    padding-top: 64px;
+  }
   .marketing-nav nav > a:first-child,
   .store-nav > div > span {
     display: none;
