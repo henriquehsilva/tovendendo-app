@@ -1246,6 +1246,10 @@ footer {
   color: #885b00;
   background: #fff1c7;
 }
+.sale-status.failed {
+  color: #9b2c2c;
+  background: #fff0f0;
+}
 .sale-contact {
   flex-wrap: wrap;
   margin-top: 12px;
@@ -1256,6 +1260,14 @@ footer {
   margin-top: 10px;
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+.stripe-failure {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #fff0f0;
+  color: #9b2c2c;
+  font-size: 0.86rem;
 }
 .sale-contact a {
   color: inherit;

@@ -1,6 +1,14 @@
 import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
 
+const supportedEvents = [
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+  "checkout.session.expired",
+  "payment_intent.succeeded",
+  "payment_intent.payment_failed",
+];
+
 export default async function (request) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -10,29 +18,27 @@ export default async function (request) {
       signature,
       process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
     );
-    if (
-      ![
-        "checkout.session.completed",
-        "checkout.session.async_payment_succeeded",
-      ].includes(stripeEvent.type)
-    )
+    if (!supportedEvents.includes(stripeEvent.type))
       return json(200, { received: true });
-    const session = stripeEvent.data.object,
-      { storeId, orderId } = session.metadata || {};
+    const payment = stripeEvent.data.object;
+    const { storeId, orderId } = payment.metadata || {};
     if (!storeId || !orderId) return json(200, { received: true });
-    const admin = firebaseAdmin(),
-      firestore = admin.firestore(),
-      orderRef = firestore.doc(`stores/${storeId}/orders/${orderId}`);
+    const admin = firebaseAdmin();
+    const firestore = admin.firestore();
+    const orderRef = firestore.doc(`stores/${storeId}/orders/${orderId}`);
     await firestore.runTransaction(async (transaction) => {
       const order = await transaction.get(orderRef);
-      if (!order.exists || order.data().status === "paid") return;
+      if (!order.exists) return;
       const data = order.data();
-      const validPayment =
+      const receivedAmount =
+        payment.object === "checkout.session"
+          ? payment.amount_total
+          : payment.amount;
+      const validReference =
         data.provider === "stripe" &&
-        session.payment_status === "paid" &&
-        Number(data.totalCents) === Number(session.amount_total) &&
+        Number(data.totalCents) === Number(receivedAmount) &&
         (!stripeEvent.account || data.stripeAccountId === stripeEvent.account);
-      if (!validPayment) {
+      if (!validReference) {
         transaction.update(orderRef, {
           status: "payment_review",
           validationError:
@@ -40,16 +46,50 @@ export default async function (request) {
         });
         return;
       }
+      if (stripeEvent.type === "payment_intent.payment_failed") {
+        transaction.update(orderRef, {
+          status: "payment_failed",
+          paymentIntentId: payment.id,
+          stripePaymentStatus: payment.status,
+          failureCode: payment.last_payment_error?.code || "card_declined",
+          failureMessage:
+            payment.last_payment_error?.message ||
+            "O cartão não foi aprovado pela Stripe.",
+          failedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return;
+      }
+      if (stripeEvent.type === "checkout.session.expired") {
+        if (data.status === "paid") return;
+        transaction.update(orderRef, {
+          status: "expired",
+          checkoutSessionId: payment.id,
+          failureMessage: "O prazo para concluir o Checkout Stripe expirou.",
+          failedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return;
+      }
+      const paid =
+        stripeEvent.type === "payment_intent.succeeded" ||
+        payment.payment_status === "paid";
+      if (!paid || data.status === "paid") return;
       transaction.update(orderRef, {
         status: "paid",
-        paymentIntentId: session.payment_intent,
-        checkoutSessionId: session.id,
-        stripePaymentStatus: session.payment_status,
+        paymentIntentId:
+          payment.object === "payment_intent"
+            ? payment.id
+            : payment.payment_intent,
+        ...(payment.object === "checkout.session"
+          ? { checkoutSessionId: payment.id }
+          : {}),
+        stripePaymentStatus: payment.status || payment.payment_status,
         customer: {
-          name: session.customer_details?.name || data.customer?.name || "",
-          email: session.customer_details?.email || data.customer?.email || "",
-          phone: session.customer_details?.phone || data.customer?.phone || "",
+          name: payment.customer_details?.name || data.customer?.name || "",
+          email: payment.customer_details?.email || data.customer?.email || "",
+          phone: payment.customer_details?.phone || data.customer?.phone || "",
         },
+        failureCode: admin.firestore.FieldValue.delete(),
+        failureMessage: admin.firestore.FieldValue.delete(),
         paidAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });

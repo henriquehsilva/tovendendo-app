@@ -1769,11 +1769,15 @@ function Admin({ user, onLogout }) {
     const status =
       order.status === "paid"
         ? "pagamento validado pago"
-        : order.status === "payment_review"
-          ? "revisar pagamento"
-          : order.provider === "pix"
-            ? "pendente de confirmacao"
-            : "aguardando stripe pendente";
+        : order.status === "payment_failed"
+          ? "cartao recusado falhou"
+          : order.status === "expired"
+            ? "checkout expirado"
+            : order.status === "payment_review"
+              ? "revisar pagamento"
+              : order.provider === "pix"
+                ? "pendente de confirmacao"
+                : "aguardando stripe pendente";
     return normalizeSearch(
       [
         order.id,
@@ -2456,22 +2460,38 @@ function Admin({ user, onLogout }) {
                         </span>
                         <span
                           className={`sale-status ${
-                            order.status === "paid" ? "paid" : "pending"
+                            order.status === "paid"
+                              ? "paid"
+                              : ["payment_failed", "expired"].includes(
+                                    order.status,
+                                  )
+                                ? "failed"
+                                : "pending"
                           }`}
                         >
                           {order.status === "paid"
                             ? "Pagamento validado"
-                            : order.status === "payment_review"
-                              ? "Revisar pagamento"
-                              : order.provider === "pix"
-                                ? "Pendente de confirmação"
-                                : "Aguardando Stripe"}
+                            : order.status === "payment_failed"
+                              ? "Cartão recusado"
+                              : order.status === "expired"
+                                ? "Checkout expirado"
+                                : order.status === "payment_review"
+                                  ? "Revisar pagamento"
+                                  : order.provider === "pix"
+                                    ? "Pendente de confirmação"
+                                    : "Aguardando Stripe"}
                         </span>
                       </div>
                       {order.provider === "stripe" && order.paymentIntentId && (
                         <small className="stripe-transaction">
                           Transação Stripe: {order.paymentIntentId}
                         </small>
+                      )}
+                      {order.provider === "stripe" && order.failureMessage && (
+                        <p className="stripe-failure">
+                          <b>Falha informada pela Stripe:</b>{" "}
+                          {order.failureMessage}
+                        </p>
                       )}
                       <div className="sale-contact">
                         <a href={`mailto:${order.customer?.email || ""}`}>
