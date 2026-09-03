@@ -33,6 +33,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import QRCode from "qrcode";
 import { auth, db, firebaseEnabled, googleProvider, storage } from "./firebase";
 import { demoProducts, demoStore, emptyStore } from "./data";
+import Docs from "./Docs";
 
 const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -3006,6 +3007,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/doc" element={<Docs />} />
       <Route path="/loja/:slug" element={<StorePage />} />
       <Route path="/admin/login" element={<Login user={user} />} />
       <Route path="/admin" element={<Admin user={user} onLogout={logout} />} />
