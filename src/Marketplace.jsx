@@ -4,9 +4,19 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db, firebaseEnabled } from "./firebase";
 import { demoMarketplaceStores, demoStore } from "./data";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 9;
 const normalize = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const categoryNames = (store) => (store.categories || []).map((item) => item.name).filter(Boolean);
+const categoryIcon = (name) => {
+  const normalized = normalize(name);
+  if (normalized.includes("moda") || normalized.includes("acessor")) return "♢";
+  if (normalized.includes("casa") || normalized.includes("decor")) return "⌂";
+  if (normalized.includes("beleza")) return "✦";
+  if (normalized.includes("alimento") || normalized.includes("doce")) return "◒";
+  if (normalized.includes("infantil")) return "☆";
+  if (normalized.includes("jardim")) return "❋";
+  return "◉";
+};
 
 function Marketplace() {
   const [stores, setStores] = useState([]);
@@ -51,6 +61,7 @@ function Marketplace() {
   useEffect(() => setPage(1), [search, category, location, sort]);
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const featuredCategories = categories.filter((item) => item !== "Todas").slice(0, 8);
   const clear = () => { setSearch(""); setCategory("Todas"); setLocation("Todos os lugares"); };
 
   return (
@@ -61,19 +72,28 @@ function Marketplace() {
       </header>
       <main>
         <section className="market-hero">
-          <div><p className="eyebrow">COMPRE DE QUEM FAZ ACONTECER</p><h1>Descubra lojas incríveis perto de você.</h1><p>Produtos únicos, marcas independentes e pequenos negócios reunidos em um só lugar.</p></div>
+          <div><p className="eyebrow">O MARKETPLACE DOS PEQUENOS NEGÓCIOS</p><h1>Encontre algo especial perto de você.</h1><p>Explore lojas independentes, descubra produtos únicos e compre diretamente de quem faz acontecer.</p></div>
           <form className="market-search" onSubmit={(event) => event.preventDefault()} role="search">
-            <span aria-hidden="true">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Busque por loja, produto, categoria ou cidade" aria-label="Buscar lojas" />
-            {search && <button type="button" onClick={() => setSearch("")} aria-label="Limpar busca">×</button>}
+            <label className="market-search-term"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="O que você está procurando?" aria-label="Buscar lojas, produtos ou categorias" />{search && <button type="button" onClick={() => setSearch("")} aria-label="Limpar busca">×</button>}</label>
+            <label className="market-search-location"><span aria-hidden="true">⌖</span><select value={location} onChange={(event) => setLocation(event.target.value)} aria-label="Escolher localização">{locations.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <button className="market-search-submit" type="submit">Buscar</button>
           </form>
-          <div className="market-suggestions"><span>Buscas populares:</span>{["Moda", "Casa", "Beleza", "Alimentos"].map((item) => <button key={item} onClick={() => setSearch(item)}>{item}</button>)}</div>
+          <div className="market-suggestions"><span>Mais buscados:</span>{["Moda", "Casa", "Beleza", "Alimentos"].map((item) => <button key={item} onClick={() => setSearch(item)}>{item}</button>)}</div>
         </section>
+
+        <section className="market-category-shelf" aria-label="Categorias em destaque">
+          <div className="market-section-heading"><div><p className="eyebrow">NAVEGUE POR CATEGORIA</p><h2>O que você procura hoje?</h2></div><button onClick={() => setCategory("Todas")}>Ver todas</button></div>
+          <div className="market-category-list">
+            {featuredCategories.map((item, index) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}><i style={{ "--category-index": index }}>{categoryIcon(item)}</i><span>{item}</span></button>)}
+          </div>
+        </section>
+
+        <section className="market-confidence"><div><i>✓</i><span><b>Lojas reais</b><small>Negócios independentes em um só lugar</small></span></div><div><i>⌖</i><span><b>Compre perto</b><small>Encontre quem vende na sua região</small></span></div><div><i>↗</i><span><b>Contato direto</b><small>Fale com a loja sem intermediários</small></span></div></section>
 
         <section className="market-directory">
           <div className="market-toolbar">
             <div className="market-filters">
               <label><span>Categoria</span><select value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map((item) => <option key={item}>{item}</option>)}</select></label>
-              <label><span>Localização</span><select value={location} onChange={(event) => setLocation(event.target.value)}>{locations.map((item) => <option key={item}>{item}</option>)}</select></label>
             </div>
             <label className="market-sort"><span>Ordenar por</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="name">Nome da loja</option><option value="location">Localização</option></select></label>
           </div>
@@ -82,8 +102,8 @@ function Marketplace() {
           {error && <div className="market-empty"><b>Algo deu errado</b><p>{error}</p></div>}
           {!loading && !error && visible.length > 0 && <div className="market-grid">{visible.map((store, index) => (
             <Link className="market-card" to={`/loja/${store.slug}`} key={store.id || store.slug}>
-              <div className="market-card-image" style={{ backgroundImage: `linear-gradient(180deg, transparent 35%, rgba(8,25,35,.55)), url("${store.heroImage}")` }}><span>{index % 3 === 0 ? "Em destaque" : "Loja online"}</span><i>↗</i></div>
-              <div className="market-card-copy"><div className="market-avatar">{String(store.brand || "L").charAt(0)}</div><div className="market-card-title"><h3>{store.brand}</h3><span>Loja verificada ✓</span></div><p>{store.tagline || store.description || "Conheça os produtos desta loja."}</p><div className="market-tags">{categoryNames(store).slice(0, 2).map((item) => <b key={item}>{item}</b>)}{store.address && <small>⌖ {store.address}</small>}</div></div>
+              <div className="market-card-image" style={{ backgroundImage: `linear-gradient(180deg, transparent 42%, rgba(8,25,35,.62)), url("${store.heroImage}")` }}><span>{index % 3 === 0 ? "Destaque" : "Loja online"}</span><i>↗</i><small>⌖ {store.address || "Loja online"}</small></div>
+              <div className="market-card-copy"><div className="market-avatar">{store.logoUrl ? <img src={store.logoUrl} alt="" /> : String(store.brand || "L").charAt(0)}</div><div className="market-card-title"><h3>{store.brand}</h3><span>✓ Verificada</span></div><p>{store.tagline || store.description || "Conheça os produtos desta loja."}</p><div className="market-tags">{categoryNames(store).slice(0, 3).map((item) => <b key={item}>{item}</b>)}</div><strong className="market-card-action">Visitar loja <span>→</span></strong></div>
             </Link>
           ))}</div>}
           {!loading && !error && visible.length === 0 && <div className="market-empty"><span>⌕</span><b>Nenhuma loja encontrada</b><p>Tente outro termo ou remova os filtros para ampliar sua busca.</p><button className="button outline" onClick={clear}>Limpar busca</button></div>}

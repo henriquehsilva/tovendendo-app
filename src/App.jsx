@@ -1052,6 +1052,17 @@ function StorePage() {
           </div>
         </section>
       </main>
+      <footer className="store-platform-footer">
+        <span>Loja criada com</span>
+        <a
+          href="https://tovendendo.app"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Conheça a plataforma Tô Vendendo"
+        >
+          https://tovendendo.app
+        </a>
+      </footer>
       {count > 0 && (
         <button className="floating-cart" onClick={() => setCartOpen(true)}>
           Ver sacola · {money(total)}
@@ -3325,7 +3336,8 @@ function AdminPreview({ store, products }) {
             <span>{store.payment?.stripeConnected ? "Cartão" : ""}</span>
           </section>
           <footer>
-            © {new Date().getFullYear()} {store.brand || "Sua loja"}
+            <span>© {new Date().getFullYear()} {store.brand || "Sua loja"}</span>
+            <small>Loja criada com tovendendo.app</small>
           </footer>
         </div>
       </div>
