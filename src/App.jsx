@@ -880,22 +880,6 @@ function StorePage() {
               </button>
             )}
           </label>
-          {categories.length > 0 && (
-            <label className="store-category-select">
-              <span>Filtrar por categoria</span>
-              <select
-                value={activeCategory}
-                onChange={(event) => setActiveCategory(event.target.value)}
-              >
-                <option value="all">Todas as categorias</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
           {categories.length > 1 && (
             <div className="category-filter" aria-label="Categorias">
               <button

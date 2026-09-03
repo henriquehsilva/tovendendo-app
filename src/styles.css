@@ -340,37 +340,6 @@ footer {
   background: #fff;
   box-shadow: 0 8px 24px #17394d0d;
 }
-.store-category-select {
-  display: grid;
-  grid-template-columns: auto minmax(190px, 280px);
-  align-items: center;
-  justify-content: end;
-  gap: 12px;
-  margin: 14px 0;
-  color: var(--muted);
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-.store-category-select select {
-  width: 100%;
-  padding: 11px 36px 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: white;
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
-}
-.store-category-select select:focus {
-  outline: 2px solid color-mix(in srgb, var(--blue-dark) 25%, transparent);
-  border-color: var(--blue-dark);
-}
-@media (max-width: 640px) {
-  .store-category-select {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-}
 .store-search:focus-within {
   border-color: var(--blue-dark);
   box-shadow: 0 0 0 3px var(--pale);
