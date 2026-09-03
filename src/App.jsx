@@ -242,6 +242,7 @@ function Landing() {
       <header className="marketing-nav">
         <Logo />
         <nav>
+          <Link to="/doc">Recursos</Link>
           <Link to="/admin/login">Entrar</Link>
           <Link className="button primary small" to="/admin">
             Criar minha loja
