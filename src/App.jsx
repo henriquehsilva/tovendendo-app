@@ -301,6 +301,18 @@ function Landing() {
         </section>
       </main>
       <footer>© 2026 Tô Vendendo · Feito para pequenos negócios.</footer>
+      <a
+        className="landing-whatsapp"
+        href="https://wa.me/5562985849729?text=Ol%C3%A1%21%20Gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20o%20T%C3%B4%20Vendendo."
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Contacte-nos pelo WhatsApp"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.3 23.5l5.9-1.6A11.8 11.8 0 0 0 23.8 12c0-3.2-1.2-6.2-3.3-8.5Zm-8.4 18.4c-1.9 0-3.8-.5-5.4-1.5l-.4-.2-3.5.9.9-3.4-.2-.4A9.8 9.8 0 1 1 12 21.9Zm5.4-7.4c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2l-.9 1.1c-.2.2-.3.2-.6.1-1.8-.9-3-1.6-4.2-3.7-.3-.5.3-.5.9-1.7.1-.2 0-.4 0-.6l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.4-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.4 3.7 5.9 5.2 2.2.9 3.1 1 4.2.8.7-.1 1.8-.7 2.1-1.5.3-.7.3-1.4.2-1.5-.2-.3-.5-.4-.8-.5Z" />
+        </svg>
+        <span>Contacte-nos</span>
+      </a>
       {pro && <ProModal onClose={() => setPro(false)} />}
     </div>
   );
