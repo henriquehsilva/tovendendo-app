@@ -40,6 +40,7 @@ import {
 } from "./data";
 import Docs from "./Docs";
 import Marketplace from "./Marketplace";
+import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
 
 const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -1661,6 +1662,14 @@ function Admin({ user, onLogout }) {
   const [orders, setOrders] = useState([]);
   const [salesSearch, setSalesSearch] = useState("");
   const [salesPage, setSalesPage] = useState(1);
+  const today = new Date();
+  const [reportStart, setReportStart] = useState(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`,
+  );
+  const [reportEnd, setReportEnd] = useState(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`,
+  );
+  const [generatingReport, setGeneratingReport] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
@@ -1837,6 +1846,36 @@ function Admin({ user, onLogout }) {
     (currentSalesPage - 1) * salesPageSize,
     currentSalesPage * salesPageSize,
   );
+  const reportOrders = paidOrdersInPeriod(orders, reportStart, reportEnd);
+  const reportTotals = periodSummary(reportOrders);
+  const generateReport = async () => {
+    if (!reportStart || !reportEnd || reportStart > reportEnd) {
+      setSaved("Informe um período válido para gerar o fechamento.");
+      return;
+    }
+    if (!reportOrders.length) {
+      setSaved("Não há vendas pagas no período selecionado.");
+      return;
+    }
+    setGeneratingReport(true);
+    setSaved("Preparando o relatório em PDF…");
+    try {
+      const { generatePeriodPdf } = await import("./periodReport");
+      await generatePeriodPdf({
+        store,
+        orders: reportOrders,
+        start: reportStart,
+        end: reportEnd,
+        appUrl: location.origin,
+      });
+      setSaved("Relatório gerado e baixado com sucesso ✓");
+    } catch (error) {
+      console.error("Falha ao gerar relatório:", error);
+      setSaved(`Não foi possível gerar o PDF: ${error.message}`);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
   const confirmPix = async (orderId) => {
     setSaving(true);
     setSaved("Confirmando pagamento Pix…");
@@ -2147,7 +2186,8 @@ function Admin({ user, onLogout }) {
             ["products", "03 · Produtos"],
             ["payment", "04 · Pagamentos"],
             ["sales", "05 · Vendas"],
-            ["publish", "06 · Publicar"],
+            ["closing", "06 · Fechamento"],
+            ["publish", "07 · Publicar"],
           ].map((x) => (
             <button
               key={x[0]}
@@ -2668,6 +2708,79 @@ function Admin({ user, onLogout }) {
                   </button>
                 </nav>
               )}
+            </>
+          )}
+          {tab === "closing" && (
+            <>
+              <p className="eyebrow">RELATÓRIO FINANCEIRO</p>
+              <h1>Fechamento de período.</h1>
+              <p className="admin-help">
+                Selecione as datas para baixar um PDF com as vendas pagas,
+                compradores, itens, meios de pagamento e observações registradas.
+              </p>
+              <section className="closing-card">
+                <div className="closing-period">
+                  <label className="field">
+                    <span>Data inicial</span>
+                    <div>
+                      <input
+                        type="date"
+                        value={reportStart}
+                        max={reportEnd || undefined}
+                        onChange={(event) => setReportStart(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                  <label className="field">
+                    <span>Data final</span>
+                    <div>
+                      <input
+                        type="date"
+                        value={reportEnd}
+                        min={reportStart || undefined}
+                        onChange={(event) => setReportEnd(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                </div>
+                <div className="closing-summary" aria-live="polite">
+                  <article>
+                    <small>Total vendido</small>
+                    <strong>{money(reportTotals.total)}</strong>
+                  </article>
+                  <article>
+                    <small>Vendas pagas</small>
+                    <strong>{reportOrders.length}</strong>
+                  </article>
+                  <article>
+                    <small>Itens vendidos</small>
+                    <strong>{reportTotals.items}</strong>
+                  </article>
+                </div>
+                <div className="closing-methods">
+                  <span>Pix <b>{money(reportTotals.pix)}</b></span>
+                  <span>Cartão <b>{money(reportTotals.card)}</b></span>
+                </div>
+                <button
+                  type="button"
+                  className="button primary closing-download"
+                  disabled={
+                    generatingReport ||
+                    !reportStart ||
+                    !reportEnd ||
+                    reportStart > reportEnd ||
+                    !reportOrders.length
+                  }
+                  onClick={generateReport}
+                >
+                  {generatingReport ? "Gerando PDF…" : "Baixar relatório em PDF"}
+                </button>
+                {!reportOrders.length && reportStart && reportEnd && (
+                  <small className="closing-empty">
+                    Nenhuma venda paga encontrada neste período.
+                  </small>
+                )}
+              </section>
             </>
           )}
           {tab === "publish" && (

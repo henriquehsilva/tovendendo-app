@@ -1460,6 +1460,64 @@ footer {
   font-size: 0.85rem;
   text-align: center;
 }
+.closing-card {
+  margin-top: 28px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 14px 36px #1d526d0d;
+}
+.closing-period,
+.closing-summary,
+.closing-methods {
+  display: grid;
+  gap: 16px;
+}
+.closing-period {
+  grid-template-columns: 1fr 1fr;
+}
+.closing-summary {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 24px;
+}
+.closing-summary article {
+  display: grid;
+  gap: 7px;
+  padding: 18px;
+  border-radius: 9px;
+  background: var(--pale);
+}
+.closing-summary small,
+.closing-empty {
+  color: var(--muted);
+}
+.closing-summary strong {
+  color: var(--blue-dark);
+  font-size: 1.25rem;
+}
+.closing-methods {
+  grid-template-columns: 1fr 1fr;
+  margin: 18px 0 24px;
+}
+.closing-methods span {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+.closing-methods b {
+  color: var(--ink);
+}
+.closing-download {
+  width: 100%;
+}
+.closing-empty {
+  display: block;
+  margin-top: 12px;
+  text-align: center;
+}
 @media (max-width: 640px) {
   .sales-pagination {
     flex-wrap: wrap;
@@ -1467,6 +1525,14 @@ footer {
   .sales-pagination span {
     order: -1;
     width: 100%;
+  }
+  .closing-card {
+    padding: 18px;
+  }
+  .closing-period,
+  .closing-summary,
+  .closing-methods {
+    grid-template-columns: 1fr;
   }
 }
 .product-editor {
