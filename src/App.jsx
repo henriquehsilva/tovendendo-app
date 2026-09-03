@@ -1637,6 +1637,7 @@ function Admin({ user, onLogout }) {
   const [orders, setOrders] = useState([]);
   const [salesSearch, setSalesSearch] = useState("");
   const [salesPage, setSalesPage] = useState(1);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
@@ -2082,6 +2083,17 @@ function Admin({ user, onLogout }) {
       <header className="admin-top">
         <Logo />
         <div>
+          <button
+            type="button"
+            className={`admin-menu-toggle ${adminMenuOpen ? "open" : ""}`}
+            onClick={() => setAdminMenuOpen((open) => !open)}
+            aria-label={adminMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={adminMenuOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
           {store.slug && (
             <Link to={`/loja/${store.slug}`} target="_blank">
               Ver loja ↗
@@ -2092,8 +2104,16 @@ function Admin({ user, onLogout }) {
           </button>
         </div>
       </header>
+      {adminMenuOpen && (
+        <button
+          type="button"
+          className="admin-menu-backdrop"
+          onClick={() => setAdminMenuOpen(false)}
+          aria-label="Fechar menu"
+        />
+      )}
       <div className="editor">
-        <aside>
+        <aside className={adminMenuOpen ? "admin-menu-open" : ""}>
           <p>PAINEL DA LOJA</p>
           {[
             ["store", "01 · Loja"],
@@ -2106,7 +2126,10 @@ function Admin({ user, onLogout }) {
             <button
               key={x[0]}
               className={tab === x[0] ? "active" : ""}
-              onClick={() => setTab(x[0])}
+              onClick={() => {
+                setTab(x[0]);
+                setAdminMenuOpen(false);
+              }}
             >
               {x[1]}
             </button>
