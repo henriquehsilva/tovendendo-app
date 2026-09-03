@@ -1761,6 +1761,9 @@ function Admin({ user, onLogout }) {
   const updatePayment = (key, value) =>
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
   const categories = storeCategories(store, products);
+  const salesOrders = orders.filter(
+    (order) => order.provider === "pix" || order.status === "paid",
+  );
   const confirmPix = async (orderId) => {
     setSaving(true);
     setSaved("Confirmando pagamento Pix…");
@@ -2359,8 +2362,8 @@ function Admin({ user, onLogout }) {
                 Confirme o Pix somente depois de conferir o recebimento.
               </p>
               <div className="sales-list">
-                {orders.length ? (
-                  orders.map((order) => (
+                {salesOrders.length ? (
+                  salesOrders.map((order) => (
                     <article className="sale-card" key={order.id}>
                       <header>
                         <div>
@@ -2384,7 +2387,9 @@ function Admin({ user, onLogout }) {
                       </header>
                       <div className="sale-meta">
                         <span>
-                          {order.provider === "pix" ? "Pix" : "Cartão"}
+                          {order.provider === "pix"
+                            ? "Pix"
+                            : "Cartão · Stripe confirmado"}
                         </span>
                         <span
                           className={`sale-status ${
@@ -2400,6 +2405,11 @@ function Admin({ user, onLogout }) {
                                 : "Aguardando Stripe"}
                         </span>
                       </div>
+                      {order.provider === "stripe" && order.paymentIntentId && (
+                        <small className="stripe-transaction">
+                          Transação Stripe: {order.paymentIntentId}
+                        </small>
+                      )}
                       <div className="sale-contact">
                         <a href={`mailto:${order.customer?.email || ""}`}>
                           {order.customer?.email || "E-mail não informado"}

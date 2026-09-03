@@ -1216,6 +1216,12 @@ footer {
   margin-top: 12px;
   font-size: 0.9rem;
 }
+.stripe-transaction {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
 .sale-contact a {
   color: inherit;
 }
