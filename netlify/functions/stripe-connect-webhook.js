@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
+import { releaseOrderStock } from "./_inventory.js";
 
 const supportedEvents = [
   "checkout.session.completed",
@@ -26,7 +27,7 @@ export default async function (request) {
     const admin = firebaseAdmin();
     const firestore = admin.firestore();
     const orderRef = firestore.doc(`stores/${storeId}/orders/${orderId}`);
-    await firestore.runTransaction(async (transaction) => {
+    const shouldReleaseStock = await firestore.runTransaction(async (transaction) => {
       const order = await transaction.get(orderRef);
       if (!order.exists) return;
       const data = order.data();
@@ -60,14 +61,14 @@ export default async function (request) {
         return;
       }
       if (stripeEvent.type === "checkout.session.expired") {
-        if (data.status === "paid") return;
+        if (data.status === "paid") return false;
         transaction.update(orderRef, {
           status: "expired",
           checkoutSessionId: payment.id,
           failureMessage: "O prazo para concluir o Checkout Stripe expirou.",
           failedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        return;
+        return true;
       }
       const paid =
         stripeEvent.type === "payment_intent.succeeded" ||
@@ -92,7 +93,10 @@ export default async function (request) {
         failureMessage: admin.firestore.FieldValue.delete(),
         paidAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      return false;
     });
+    if (shouldReleaseStock)
+      await releaseOrderStock({ firestore, orderRef });
     return json(200, { received: true });
   } catch (error) {
     console.error(error);

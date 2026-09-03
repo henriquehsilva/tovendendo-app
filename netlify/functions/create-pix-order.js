@@ -1,10 +1,6 @@
 import { firebaseAdmin, json } from "./_firebase.js";
-import {
-  cleanCustomer,
-  priceInCents,
-  safeQuantity,
-  validCustomer,
-} from "./_orders.js";
+import { cleanCustomer, validCustomer } from "./_orders.js";
+import { reserveOrderStock } from "./_inventory.js";
 
 export default async function (request) {
   if (request.method !== "POST")
@@ -24,41 +20,18 @@ export default async function (request) {
     if (!storeSnap.exists || !store?.published || !store.payment?.enabled)
       return json(404, { error: "Pagamento Pix indisponível." });
 
-    const orderItems = [];
-    let totalCents = 0;
-    for (const requested of items) {
-      const product = await firestore
-        .doc(`stores/${storeId}/products/${requested.id}`)
-        .get();
-      const data = product.data();
-      const quantity = safeQuantity(requested.quantity);
-      const unitPriceCents = priceInCents(data?.price);
-      if (
-        !product.exists ||
-        data.unavailable === true ||
-        data.active === false ||
-        !Number.isSafeInteger(unitPriceCents) ||
-        unitPriceCents <= 0
-      )
-        throw new Error(`${data?.name || "Um produto"} está indisponível.`);
-      totalCents += unitPriceCents * quantity;
-      orderItems.push({
-        productId: product.id,
-        name: data.name,
-        quantity,
-        unitPrice: unitPriceCents / 100,
-      });
-    }
-
     const orderRef = firestore.collection(`stores/${storeId}/orders`).doc();
-    await orderRef.set({
-      items: orderItems,
-      customer,
-      total: totalCents / 100,
-      totalCents,
-      status: "pending_confirmation",
-      provider: "pix",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    const { totalCents } = await reserveOrderStock({
+      firestore,
+      admin,
+      storeId,
+      requestedItems: items,
+      orderRef,
+      orderData: {
+        customer,
+        status: "pending_confirmation",
+        provider: "pix",
+      },
     });
     return json(200, { orderId: orderRef.id, total: totalCents / 100 });
   } catch (error) {

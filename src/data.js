@@ -33,6 +33,7 @@ export const demoProducts = [
     categoryId: "acessorios",
     description: "Leve, resistente e perfeita para todos os dias.",
     price: 129.9,
+    stock: 8,
     unavailable: false,
     imageUrl:
       "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
@@ -44,6 +45,7 @@ export const demoProducts = [
     categoryId: "casa",
     description: "Luz aconchegante com design contemporâneo.",
     price: 89.9,
+    stock: 5,
     unavailable: false,
     imageUrl:
       "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=800&q=80",
@@ -55,6 +57,7 @@ export const demoProducts = [
     categoryId: "beleza",
     description: "Um presente delicado para uma pausa especial.",
     price: 74.5,
+    stock: 0,
     unavailable: true,
     imageUrl:
       "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=800&q=80",

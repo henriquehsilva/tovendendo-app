@@ -128,7 +128,13 @@ const productImages = (product) =>
       ? [product.imageUrl]
       : ["https://placehold.co/800x600/eaf6fc/247da9?text=Produto"];
 const productUnavailable = (product) =>
-  product.unavailable === true || product.active === false;
+  product.unavailable === true ||
+  product.active === false ||
+  (product.stock !== undefined && Number(product.stock) <= 0);
+const productStock = (product) =>
+  product.stock === undefined || product.stock === null || product.stock === ""
+    ? Infinity
+    : Math.max(0, Math.floor(Number(product.stock) || 0));
 const instagramHandle = (value) =>
   String(value || "")
     .trim()
@@ -632,6 +638,8 @@ function StorePage() {
   const { slug } = useParams();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
+  const [productEditor, setProductEditor] = useState(null);
+  const [productSearch, setProductSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
@@ -730,6 +738,21 @@ function StorePage() {
   const displayed = filtered.slice(0, visibleLimit);
   useEffect(() => setVisibleLimit(12), [search, activeCategory]);
   useEffect(() => {
+    setCart((current) =>
+      Object.fromEntries(
+        Object.entries(current).map(([productId, quantity]) => {
+          const product = products.find((item) => item.id === productId);
+          return [
+            productId,
+            product
+              ? Math.min(Number(quantity) || 0, productStock(product))
+              : 0,
+          ];
+        }),
+      ),
+    );
+  }, [products]);
+  useEffect(() => {
     const target = loadMoreRef.current;
     if (!target || displayed.length >= filtered.length) return;
     const observer = new IntersectionObserver(
@@ -753,7 +776,12 @@ function StorePage() {
   const change = (p, delta) =>
     setCart((c) => ({
       ...c,
-      [p.id]: productUnavailable(p) ? 0 : Math.max(0, (c[p.id] || 0) + delta),
+      [p.id]: productUnavailable(p)
+        ? 0
+        : Math.min(
+            productStock(p),
+            Math.max(0, (c[p.id] || 0) + delta),
+          ),
     }));
   const checkout = async () => {
     if (!count) return;
@@ -1017,7 +1045,15 @@ function StorePage() {
                   <div className="quantity">
                     <button onClick={() => change(p, -1)}>−</button>
                     <span>{cart[p.id]}</span>
-                    <button onClick={() => change(p, 1)}>+</button>
+                    <button
+                      disabled={(cart[p.id] || 0) >= productStock(p)}
+                      onClick={() => change(p, 1)}
+                      aria-label={
+                        (cart[p.id] || 0) >= productStock(p)
+                          ? "Quantidade máxima disponível"
+                          : "Adicionar uma unidade"
+                      }
+                    >+</button>
                   </div>
                 </div>
               ))}
@@ -1461,7 +1497,7 @@ function ProductCard({ store, product, quantity, onChange }) {
               descriptionExpanded ? "expanded" : "",
             ].join(" ")}
           >
-            <ProductDescription value={product.description} />
+          <ProductDescription value={product.description} />
           </div>
           {descriptionCanExpand && (
             <button
@@ -1473,6 +1509,13 @@ function ProductCard({ store, product, quantity, onChange }) {
               {descriptionExpanded ? "Mostrar menos" : "Mostrar mais"}
             </button>
           )}
+          {Number.isFinite(productStock(product)) && !productUnavailable(product) && (
+            <small className="product-stock">
+              {productStock(product)} {productStock(product) === 1
+                ? "unidade disponível"
+                : "unidades disponíveis"}
+            </small>
+          )}
           <div className="product-bottom">
             <b>{money(product.price)}</b>
             {productUnavailable(product) ? (
@@ -1481,7 +1524,15 @@ function ProductCard({ store, product, quantity, onChange }) {
               <div className="quantity">
                 <button onClick={() => onChange(product, -1)}>−</button>
                 <span>{quantity}</span>
-                <button onClick={() => onChange(product, 1)}>+</button>
+                <button
+                  disabled={quantity >= productStock(product)}
+                  onClick={() => onChange(product, 1)}
+                  aria-label={
+                    quantity >= productStock(product)
+                      ? "Quantidade máxima disponível"
+                      : "Adicionar uma unidade"
+                  }
+                >+</button>
               </div>
             ) : (
               <button onClick={() => onChange(product, 1)}>Adicionar</button>
@@ -1836,6 +1887,11 @@ function Admin({ user, onLogout }) {
   const updatePayment = (key, value) =>
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
   const categories = storeCategories(store, products);
+  const adminProducts = products.filter((product) =>
+    normalizeSearch(
+      [product.name, product.category, product.stock, product.price].join(" "),
+    ).includes(normalizeSearch(productSearch)),
+  );
   const filteredOrders = orders.filter((order) => {
     if (
       order.provider === "stripe" &&
@@ -2119,27 +2175,60 @@ function Admin({ user, onLogout }) {
       setTab("categories");
       return;
     }
-    setProducts((p) => [
-      ...p,
-      {
+    setProductEditor({
+      mode: "create",
+      value: {
         id: crypto.randomUUID(),
-        name: "Novo produto",
+        name: "",
         category: categories[0].name,
         categoryId: categories[0].id,
         description: "",
         price: 0,
+        stock: 1,
         unavailable: false,
         active: true,
         imageUrl: "",
         imageUrls: [],
       },
-    ]);
+    });
     setTab("products");
   };
-  const changeProduct = (id, key, value) =>
-    setProducts((ps) =>
-      ps.map((p) => (p.id === id ? { ...p, [key]: value } : p)),
+  const changeProductDraft = (key, value) =>
+    setProductEditor((current) => ({
+      ...current,
+      value: { ...current.value, [key]: value },
+    }));
+  const editProduct = (product) =>
+    setProductEditor({
+      mode: "edit",
+      value: { ...product, imageUrls: [...(product.imageUrls || [])] },
+    });
+  const finishProduct = () => {
+    const product = productEditor?.value;
+    if (!product?.name.trim()) {
+      setSaved("Informe o nome do produto.");
+      return;
+    }
+    if (!productCategoryId(product, categories)) {
+      setSaved("Escolha uma categoria para o produto.");
+      return;
+    }
+    if (!(Number(product.price) > 0)) {
+      setSaved("Informe um preço válido para o produto.");
+      return;
+    }
+    setProducts((current) =>
+      productEditor.mode === "create"
+        ? [...current, product]
+        : current.map((item) => (item.id === product.id ? product : item)),
     );
+    setProductEditor(null);
+    setSaved(
+      productEditor.mode === "create"
+        ? "Produto adicionado. Salve as alterações para publicar ✓"
+        : "Produto atualizado. Salve as alterações para publicar ✓",
+    );
+  };
   const addCategory = () =>
     update("categories", [
       ...categories,
@@ -2179,7 +2268,10 @@ function Admin({ user, onLogout }) {
     );
   };
   const remove = async (p) => {
+    if (!window.confirm(`Excluir “${p.name}”? Esta ação não pode ser desfeita.`))
+      return;
     setProducts((ps) => ps.filter((x) => x.id !== p.id));
+    setProductEditor(null);
     if (firebaseEnabled && store.id)
       await deleteDoc(doc(db, "stores", store.id, "products", p.id));
   };
@@ -2381,80 +2473,224 @@ function Admin({ user, onLogout }) {
               <div className="title-actions">
                 <div>
                   <p className="eyebrow">CATÁLOGO E ESTOQUE</p>
-                  <h1>Seus produtos.</h1>
+                  <h1>
+                    {productEditor
+                      ? productEditor.mode === "create"
+                        ? "Novo produto."
+                        : "Editar produto."
+                      : "Seus produtos."}
+                  </h1>
                 </div>
-                <button className="button outline" onClick={add}>
-                  + Novo produto
-                </button>
+                {productEditor ? (
+                  <button
+                    className="button outline"
+                    onClick={() => setProductEditor(null)}
+                  >
+                    ← Voltar à lista
+                  </button>
+                ) : (
+                  <button className="button outline" onClick={add}>
+                    + Novo produto
+                  </button>
+                )}
               </div>
-              <div className="product-editors">
-                {products.map((p) => (
-                  <article className="product-editor" key={p.id}>
-                    <img src={productImages(p)[0]} alt={`Foto de ${p.name}`} />
-                    <div>
-                      <Field
-                        label="Nome"
-                        value={p.name}
-                        onChange={(v) => changeProduct(p.id, "name", v)}
+              {productEditor ? (
+                <article className="product-editor product-editor-single">
+                  <img
+                    src={productImages(productEditor.value)[0]}
+                    alt={
+                      productEditor.value.name
+                        ? `Foto de ${productEditor.value.name}`
+                        : "Prévia do produto"
+                    }
+                  />
+                  <div>
+                    <Field
+                      label="Nome"
+                      value={productEditor.value.name}
+                      onChange={(value) => changeProductDraft("name", value)}
+                    />
+                    <SelectField
+                      label="Categoria"
+                      value={productCategoryId(productEditor.value, categories)}
+                      options={categories}
+                      onChange={(categoryId) => {
+                        const category = categories.find(
+                          (item) => item.id === categoryId,
+                        );
+                        setProductEditor((current) => ({
+                          ...current,
+                          value: {
+                            ...current.value,
+                            categoryId,
+                            category: category?.name || "",
+                          },
+                        }));
+                      }}
+                    />
+                    <ProductDescriptionEditor
+                      value={productEditor.value.description}
+                      onChange={(value) =>
+                        changeProductDraft("description", value)
+                      }
+                    />
+                    <ProductImagesUpload
+                      values={productImages(productEditor.value).filter(
+                        (url) => !url.includes("placehold.co"),
+                      )}
+                      onUpload={(file) =>
+                        uploadImage(file, `products/${productEditor.value.id}`)
+                      }
+                      onChange={(urls) =>
+                        changeProductDraft("imageUrls", urls)
+                      }
+                    />
+                    <div className="inline-fields">
+                      <CurrencyField
+                        label="Preço"
+                        value={productEditor.value.price}
+                        onChange={(value) => changeProductDraft("price", value)}
                       />
-                      <SelectField
-                        label="Categoria"
-                        value={productCategoryId(p, categories)}
-                        options={categories}
-                        onChange={(categoryId) => {
-                          const category = categories.find(
-                            (item) => item.id === categoryId,
-                          );
-                          changeProduct(p.id, "categoryId", categoryId);
-                          changeProduct(p.id, "category", category?.name || "");
-                        }}
-                      />
-                      <ProductDescriptionEditor
-                        value={p.description}
-                        onChange={(v) => changeProduct(p.id, "description", v)}
-                      />
-                      <ProductImagesUpload
-                        values={productImages(p).filter(
-                          (url) => !url.includes("placehold.co"),
-                        )}
-                        onUpload={(file) =>
-                          uploadImage(file, `products/${p.id}`)
-                        }
-                        onChange={(urls) =>
-                          changeProduct(p.id, "imageUrls", urls)
-                        }
-                      />
-                      <div>
-                        <CurrencyField
-                          label="Preço"
-                          value={p.price}
-                          onChange={(value) =>
-                            changeProduct(p.id, "price", value)
-                          }
-                        />
-                      </div>
-                      <label className="check">
-                        <input
-                          type="checkbox"
-                          checked={productUnavailable(p)}
-                          onChange={(e) => {
-                            changeProduct(
-                              p.id,
-                              "unavailable",
-                              e.target.checked,
-                            );
-                            changeProduct(p.id, "active", true);
-                          }}
-                        />{" "}
-                        Indisponível
+                      <label className="field">
+                        <span>Quantidade disponível</span>
+                        <div>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            inputMode="numeric"
+                            value={productEditor.value.stock ?? ""}
+                            placeholder="Ilimitado"
+                            onChange={(event) =>
+                              changeProductDraft(
+                                "stock",
+                                event.target.value === ""
+                                  ? ""
+                                  : Math.max(
+                                      0,
+                                      Math.floor(
+                                        Number(event.target.value) || 0,
+                                      ),
+                                    ),
+                              )
+                            }
+                          />
+                        </div>
                       </label>
-                      <button className="danger" onClick={() => remove(p)}>
-                        Excluir produto
+                    </div>
+                    <label className="check">
+                      <input
+                        type="checkbox"
+                        checked={
+                          productEditor.value.unavailable === true ||
+                          productEditor.value.active === false
+                        }
+                        onChange={(event) =>
+                          setProductEditor((current) => ({
+                            ...current,
+                            value: {
+                              ...current.value,
+                              unavailable: event.target.checked,
+                              active: true,
+                            },
+                          }))
+                        }
+                      />{" "}
+                      Indisponível
+                    </label>
+                    <div className="product-editor-actions">
+                      <button className="button primary" onClick={finishProduct}>
+                        {productEditor.mode === "create"
+                          ? "Adicionar produto"
+                          : "Concluir edição"}
+                      </button>
+                      <button
+                        className="button outline"
+                        onClick={() => setProductEditor(null)}
+                      >
+                        Cancelar
                       </button>
                     </div>
-                  </article>
-                ))}
-              </div>
+                  </div>
+                </article>
+              ) : (
+                <div className="product-admin-list">
+                  {products.length > 0 && (
+                    <label className="sales-search product-admin-search">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m16 16 5 5" />
+                      </svg>
+                      <input
+                        type="search"
+                        value={productSearch}
+                        onChange={(event) => setProductSearch(event.target.value)}
+                        placeholder="Buscar produto ou categoria"
+                        aria-label="Buscar produtos cadastrados"
+                      />
+                      {productSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setProductSearch("")}
+                          aria-label="Limpar busca"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </label>
+                  )}
+                  {adminProducts.map((product) => (
+                    <article className="product-admin-item" key={product.id}>
+                      <img
+                        src={productImages(product)[0]}
+                        alt={`Foto de ${product.name}`}
+                      />
+                      <div>
+                        <small>{product.category || "Sem categoria"}</small>
+                        <b>{product.name || "Produto sem nome"}</b>
+                        <span>
+                          {money(product.price)} · {Number.isFinite(productStock(product))
+                            ? `${productStock(product)} em estoque`
+                            : "Estoque ilimitado"}
+                        </span>
+                      </div>
+                      <span
+                        className={`product-admin-status ${
+                          productUnavailable(product) ? "inactive" : "active"
+                        }`}
+                      >
+                        {productUnavailable(product) ? "Indisponível" : "Ativo"}
+                      </span>
+                      <div className="product-admin-actions">
+                        <button
+                          className="button outline small"
+                          onClick={() => editProduct(product)}
+                        >
+                          Editar
+                        </button>
+                        <button className="danger" onClick={() => remove(product)}>
+                          Excluir
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {products.length > 0 && !adminProducts.length && (
+                    <div className="empty-products">
+                      <b>Nenhum produto encontrado</b>
+                      <span>Tente buscar usando outro nome ou categoria.</span>
+                    </div>
+                  )}
+                  {!products.length && (
+                    <div className="empty-products">
+                      <b>Nenhum produto cadastrado</b>
+                      <span>Crie o primeiro item para começar seu catálogo.</span>
+                      <button className="button primary small" onClick={add}>
+                        + Novo produto
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
           {tab === "payment" && (
@@ -2844,7 +3080,7 @@ function Admin({ user, onLogout }) {
               </button>
             </>
           )}
-          {tab !== "sales" && (
+          {tab !== "sales" && !(tab === "products" && productEditor) && (
             <div className="editor-actions">
               <button
                 className="button primary"

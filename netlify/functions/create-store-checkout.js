@@ -3,14 +3,15 @@ import { firebaseAdmin, json } from "./_firebase.js";
 import {
   cleanCustomer,
   plainProductDescription,
-  priceInCents,
-  safeQuantity,
   validCustomer,
 } from "./_orders.js";
+import { releaseOrderStock, reserveOrderStock } from "./_inventory.js";
 
 export default async function (request) {
   if (request.method !== "POST")
     return json(405, { error: "Método não permitido." });
+  let reservedOrderRef;
+  let reservedFirestore;
   try {
     const { storeId, items, customer: rawCustomer } = await request.json();
     const customer = cleanCustomer(rawCustomer);
@@ -48,53 +49,37 @@ export default async function (request) {
             ? "A Stripe está verificando os dados desta loja. O pagamento por cartão será liberado após a análise."
             : "A Stripe ainda não habilitou cobranças nesta conta da loja.",
       });
-    const lineItems = [],
-      orderItems = [];
-    let totalCents = 0;
-    for (const requested of items) {
-      const product = await firestore
-          .doc(`stores/${storeId}/products/${requested.id}`)
-          .get(),
-        data = product.data(),
-        quantity = safeQuantity(requested.quantity);
-      if (!product.exists || data.unavailable === true || data.active === false)
-        throw new Error(`${data?.name || "Um produto"} está indisponível.`);
-      const unitPriceCents = priceInCents(data.price);
-      if (!Number.isSafeInteger(unitPriceCents) || unitPriceCents <= 0)
-        throw new Error(`${data.name || "Um produto"} possui preço inválido.`);
-      totalCents += unitPriceCents * quantity;
-      lineItems.push({
-        quantity,
+    const orderRef = firestore.collection(`stores/${storeId}/orders`).doc();
+    const reservation = await reserveOrderStock({
+      firestore,
+      admin,
+      storeId,
+      requestedItems: items,
+      orderRef,
+      orderData: {
+        customer,
+        status: "pending",
+        provider: "stripe",
+        stripeAccountId: accountId,
+      },
+    });
+    reservedOrderRef = orderRef;
+    reservedFirestore = firestore;
+    const { totalCents } = reservation;
+    const lineItems = reservation.products.map((product) => ({
+        quantity: product.quantity,
         price_data: {
           currency: "brl",
-          unit_amount: unitPriceCents,
+          unit_amount: product.unitPriceCents,
           product_data: {
-            name: data.name,
-            description: plainProductDescription(data.description).slice(0, 500),
-            images: (data.imageUrls?.length ? data.imageUrls : [data.imageUrl])
+            name: product.data.name,
+            description: plainProductDescription(product.data.description).slice(0, 500),
+            images: (product.data.imageUrls?.length ? product.data.imageUrls : [product.data.imageUrl])
               .filter((url) => /^https:\/\//.test(url || ""))
               .slice(0, 8),
           },
         },
-      });
-      orderItems.push({
-        productId: product.id,
-        name: data.name,
-        quantity,
-        unitPrice: unitPriceCents / 100,
-      });
-    }
-    const orderRef = firestore.collection(`stores/${storeId}/orders`).doc();
-    await orderRef.set({
-      items: orderItems,
-      customer,
-      total: totalCents / 100,
-      totalCents,
-      status: "pending",
-      provider: "stripe",
-      stripeAccountId: accountId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+      }));
     const origin = process.env.APP_URL || request.headers.get("origin");
     const session = await stripe.checkout.sessions.create(
       {
@@ -114,8 +99,19 @@ export default async function (request) {
       { stripeAccount: accountId },
     );
     await orderRef.update({ checkoutSessionId: session.id });
+    reservedOrderRef = null;
     return json(200, { checkoutUrl: session.url });
   } catch (error) {
+    if (reservedOrderRef && reservedFirestore) {
+      try {
+        await releaseOrderStock({
+          firestore: reservedFirestore,
+          orderRef: reservedOrderRef,
+        });
+      } catch (releaseError) {
+        console.error("Falha ao devolver estoque:", releaseError);
+      }
+    }
     console.error(error);
     return json(400, {
       error: error.message || "Não foi possível abrir o pagamento.",
