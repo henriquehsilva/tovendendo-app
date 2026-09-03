@@ -135,8 +135,10 @@ const productStock = (product) =>
   product.stock === undefined || product.stock === null || product.stock === ""
     ? Infinity
     : Math.max(0, Math.floor(Number(product.stock) || 0));
+const percentageNumber = (value) =>
+  Number(String(value ?? "").replace(",", "."));
 const productDiscount = (product) =>
-  Math.max(0, Math.min(99, Number(product.cashbackPercent) || 0));
+  Math.max(0, Math.min(99, percentageNumber(product.cashbackPercent) || 0));
 const productCheckoutPrice = (product) =>
   Math.round(
     Number(product.price || 0) * 100 * (1 - productDiscount(product) / 100),
@@ -2286,6 +2288,7 @@ function Admin({ user, onLogout }) {
     });
   const finishProduct = () => {
     const product = productEditor?.value;
+    const cashbackPercent = percentageNumber(product?.cashbackPercent || 0);
     if (!product?.name.trim()) {
       setSaved("Informe o nome do produto.");
       return;
@@ -2309,17 +2312,20 @@ function Admin({ user, onLogout }) {
       return;
     }
     if (
-      !Number.isFinite(Number(product.cashbackPercent || 0)) ||
-      Number(product.cashbackPercent || 0) < 0 ||
-      Number(product.cashbackPercent || 0) > 99
+      !Number.isFinite(cashbackPercent) ||
+      cashbackPercent < 0 ||
+      cashbackPercent > 99
     ) {
       setSaved("Informe um desconto entre 0% e 99%.");
       return;
     }
+    const normalizedProduct = { ...product, cashbackPercent };
     setProducts((current) =>
       productEditor.mode === "create"
-        ? [...current, product]
-        : current.map((item) => (item.id === product.id ? product : item)),
+        ? [...current, normalizedProduct]
+        : current.map((item) =>
+            item.id === product.id ? normalizedProduct : item,
+          ),
     );
     setProductEditor(null);
     setSaved(
@@ -2681,19 +2687,15 @@ function Admin({ user, onLogout }) {
                         <span>Cashback no site (%)</span>
                         <div>
                           <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            step="0.01"
+                            type="text"
                             inputMode="decimal"
                             value={productEditor.value.cashbackPercent ?? 0}
                             onChange={(event) =>
                               changeProductDraft(
                                 "cashbackPercent",
-                                Math.max(
-                                  0,
-                                  Math.min(99, Number(event.target.value) || 0),
-                                ),
+                                event.target.value
+                                  .replace(/[^0-9,.]/g, "")
+                                  .replace(/([,.].*)[,.]/g, "$1"),
                               )
                             }
                           />
