@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { firebaseAdmin, json } from "./_firebase.js";
 import {
   cleanCustomer,
+  plainProductDescription,
   priceInCents,
   safeQuantity,
   validCustomer,
@@ -69,7 +70,7 @@ export default async function (request) {
           unit_amount: unitPriceCents,
           product_data: {
             name: data.name,
-            description: String(data.description || "").slice(0, 500),
+            description: plainProductDescription(data.description).slice(0, 500),
             images: (data.imageUrls?.length ? data.imageUrls : [data.imageUrl])
               .filter((url) => /^https:\/\//.test(url || ""))
               .slice(0, 8),

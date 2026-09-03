@@ -41,6 +41,11 @@ import {
 import Docs from "./Docs";
 import Marketplace from "./Marketplace";
 import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
+import {
+  formatDescriptionSelection,
+  prefixDescriptionLines,
+  stripDescriptionFormatting,
+} from "./descriptionFormat";
 
 const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -1247,7 +1252,15 @@ const createProductShareImage = async (store, product, imageUrl) => {
   context.fillText(money(product.price), 70, 1135);
   context.fillStyle = "#667784";
   context.font = "400 27px Arial";
-  drawWrappedText(context, product.description, 70, 1190, 940, 36, 2);
+  drawWrappedText(
+    context,
+    stripDescriptionFormatting(product.description),
+    70,
+    1190,
+    940,
+    36,
+    2,
+  );
   context.fillStyle = "#12202d";
   context.font = "600 23px Arial";
   context.fillText(`tovendendo.app/loja/${store.slug}`, 70, 1310);
@@ -1352,7 +1365,7 @@ function ProductCard({ store, product, quantity, onChange }) {
       `Olha este item da ${store.brand}:`,
       `*${product.name}*`,
       money(product.price),
-      product.description,
+      stripDescriptionFormatting(product.description),
     ]
       .filter(Boolean)
       .join("\n");
@@ -1437,7 +1450,7 @@ function ProductCard({ store, product, quantity, onChange }) {
         <div className="product-copy">
           <small>{product.category || "Produto"}</small>
           <h3>{product.name}</h3>
-          <p>{product.description}</p>
+          <ProductDescription value={product.description} />
           <div className="product-bottom">
             <b>{money(product.price)}</b>
             {productUnavailable(product) ? (
@@ -2374,9 +2387,7 @@ function Admin({ user, onLogout }) {
                           changeProduct(p.id, "category", category?.name || "");
                         }}
                       />
-                      <Field
-                        area
-                        label="Descrição"
+                      <ProductDescriptionEditor
                         value={p.description}
                         onChange={(v) => changeProduct(p.id, "description", v)}
                       />
@@ -2936,6 +2947,112 @@ function AdminPreview({ store, products }) {
     </aside>
   );
 }
+function DescriptionInline({ value }) {
+  const parts = String(value || "").split(
+    /(\*\*[^*]+\*\*|_[^_]+_|\[[^\]]+\]\(https?:\/\/[^\s)]+\))/g,
+  );
+  return parts.map((part, index) => {
+    if (/^\*\*[^*]+\*\*$/.test(part))
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    if (/^_[^_]+_$/.test(part))
+      return <em key={index}>{part.slice(1, -1)}</em>;
+    const link = part.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (link)
+      return (
+        <a key={index} href={link[2]} target="_blank" rel="noreferrer">
+          {link[1]}
+        </a>
+      );
+    return part;
+  });
+}
+
+function ProductDescription({ value, preview = false }) {
+  const content = String(value || "").trim();
+  if (!content) return preview ? <p>Confira os detalhes deste produto.</p> : null;
+  return (
+    <div className={`product-description ${preview ? "editor-preview" : ""}`}>
+      {content.split("\n").map((line, index) => {
+        if (!line.trim()) return <br key={index} />;
+        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        if (heading)
+          return (
+            <h4 key={index} className={`description-heading level-${heading[1].length}`}>
+              <DescriptionInline value={heading[2]} />
+            </h4>
+          );
+        if (/^[-*]\s+/.test(line))
+          return (
+            <div className="description-list-item" key={index}>
+              <span>•</span>
+              <p><DescriptionInline value={line.replace(/^[-*]\s+/, "")} /></p>
+            </div>
+          );
+        return <p key={index}><DescriptionInline value={line} /></p>;
+      })}
+    </div>
+  );
+}
+
+function ProductDescriptionEditor({ value, onChange }) {
+  const inputRef = useRef(null);
+  const apply = (formatter) => {
+    const input = inputRef.current;
+    if (!input) return;
+    const result = formatter(
+      String(value || ""),
+      input.selectionStart,
+      input.selectionEnd,
+    );
+    onChange(result.value);
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(result.selectionStart, result.selectionEnd);
+    });
+  };
+  const wrap = (before, after, placeholder) =>
+    apply((current, start, end) =>
+      formatDescriptionSelection(
+        current,
+        start,
+        end,
+        before,
+        after,
+        placeholder,
+      ),
+    );
+  return (
+    <div className="rich-description-field">
+      <div className="rich-description-label">
+        <span>Descrição</span>
+        <small>{String(value || "").length}/2000</small>
+      </div>
+      <div className="rich-description-editor">
+        <div className="rich-description-toolbar" role="toolbar" aria-label="Formatar descrição">
+          <button type="button" title="Título" aria-label="Adicionar título" onClick={() => apply((current, start, end) => prefixDescriptionLines(current, start, end, "## "))}>T</button>
+          <button type="button" title="Negrito" aria-label="Aplicar negrito" onClick={() => wrap("**", "**", "texto em negrito")}><b>B</b></button>
+          <button type="button" title="Itálico" aria-label="Aplicar itálico" onClick={() => wrap("_", "_", "texto em itálico")}><i>I</i></button>
+          <button type="button" title="Lista" aria-label="Criar lista" onClick={() => apply((current, start, end) => prefixDescriptionLines(current, start, end, "- "))}>☷</button>
+          <button type="button" title="Link" aria-label="Adicionar link" onClick={() => wrap("[", "](https://)", "texto do link")}>↗</button>
+        </div>
+        <textarea
+          ref={inputRef}
+          value={value || ""}
+          maxLength={2000}
+          rows={7}
+          placeholder="Apresente os benefícios, materiais, medidas e diferenciais do produto…"
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </div>
+      <div className="rich-description-preview">
+        <small>PRÉVIA NA VITRINE</small>
+        <ProductDescription value={value} preview />
+      </div>
+      <small className="rich-description-help">Selecione um trecho antes de aplicar negrito, itálico ou link.</small>
+    </div>
+  );
+}
+
 function Field({ label, value, onChange, area, type = "text", prefix }) {
   return (
     <label className="field">

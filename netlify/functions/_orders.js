@@ -18,3 +18,12 @@ export const safeQuantity = (value) =>
   Math.max(1, Math.min(99, Math.floor(Number(value)) || 1));
 
 export const priceInCents = (value) => Math.round(Number(value) * 100);
+
+export const plainProductDescription = (value) =>
+  String(value || "")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
+    .replace(/^(#{1,3}|[-*])\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/_([^_]+)_/g, "$1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();

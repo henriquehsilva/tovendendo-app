@@ -109,7 +109,7 @@ function Docs() {
             </section>
 
             <section className="docs-section docs-showcase" id="vitrine">
-              <div><p className="eyebrow">02 · VITRINE E PRODUTOS</p><h2>Um catálogo bonito, organizado e fácil de comprar.</h2><p className="docs-lead">Crie categorias, adicione até 10 fotos por item e controle o que pode ou não ser comprado.</p><ul className="docs-checks"><li><b>Busca inteligente</b><span>Encontra por nome, categoria, descrição ou preço.</span></li><li><b>Galeria ampliável</b><span>Fotos em carrossel e zoom para mostrar cada detalhe.</span></li><li><b>Disponibilidade</b><span>Pause um produto sem precisar apagar o cadastro.</span></li><li><b>Interação</b><span>Curtidas e comentários ajudam a entender o interesse.</span></li></ul></div>
+              <div><p className="eyebrow">02 · VITRINE E PRODUTOS</p><h2>Um catálogo bonito, organizado e fácil de comprar.</h2><p className="docs-lead">Crie categorias, adicione até 10 fotos por item e controle o que pode ou não ser comprado.</p><ul className="docs-checks"><li><b>Editor profissional</b><span>Formate a descrição com títulos, negrito, itálico, listas e links, acompanhando a prévia em tempo real.</span></li><li><b>Busca inteligente</b><span>Encontra por nome, categoria, descrição ou preço.</span></li><li><b>Galeria ampliável</b><span>Fotos em carrossel e zoom para mostrar cada detalhe.</span></li><li><b>Disponibilidade</b><span>Pause um produto sem precisar apagar o cadastro.</span></li><li><b>Interação</b><span>Curtidas e comentários ajudam a entender o interesse.</span></li></ul></div>
               <StoreDemo />
             </section>
 
