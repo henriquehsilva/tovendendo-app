@@ -220,12 +220,42 @@ const productCategoryId = (product, categories) =>
         .toLowerCase(),
   )?.id ||
   "";
-const localStore = () => JSON.parse(localStorage.getItem("tv-store") || "null");
-const localProducts = () =>
-  JSON.parse(localStorage.getItem("tv-products") || "null");
+const memoryStorage = new Map();
+const safeStorageGet = (key) => {
+  try {
+    return localStorage.getItem(key) ?? memoryStorage.get(key) ?? null;
+  } catch {
+    return memoryStorage.get(key) ?? null;
+  }
+};
+const safeStorageSet = (key, value) => {
+  memoryStorage.set(key, value);
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Alguns navegadores bloqueiam storage em previews ou iframes.
+  }
+};
+const safeStorageRemove = (key) => {
+  memoryStorage.delete(key);
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Mantém o logout funcional mesmo quando storage está bloqueado.
+  }
+};
+const readStoredJson = (key) => {
+  try {
+    return JSON.parse(safeStorageGet(key) || "null");
+  } catch {
+    return null;
+  }
+};
+const localStore = () => readStoredJson("tv-store");
+const localProducts = () => readStoredJson("tv-products");
 const saveLocal = (store, products) => {
-  localStorage.setItem("tv-store", JSON.stringify(store));
-  localStorage.setItem("tv-products", JSON.stringify(products));
+  safeStorageSet("tv-store", JSON.stringify(store));
+  safeStorageSet("tv-products", JSON.stringify(products));
 };
 const googleAuthError = (error) =>
   ({
@@ -550,7 +580,7 @@ function Login({ user }) {
         await (register
           ? createUserWithEmailAndPassword(auth, email, password)
           : signInWithEmailAndPassword(auth, email, password));
-      } else localStorage.setItem("tv-demo-user", email);
+      } else safeStorageSet("tv-demo-user", email);
       nav("/admin");
     } catch (err) {
       setError(err.message);
@@ -638,8 +668,6 @@ function StorePage() {
   const { slug } = useParams();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
-  const [productEditor, setProductEditor] = useState(null);
-  const [productSearch, setProductSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
@@ -1745,6 +1773,8 @@ function CommentsModal({ store, product, image, onClose }) {
 function Admin({ user, onLogout }) {
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
+  const [productEditor, setProductEditor] = useState(null);
+  const [productSearch, setProductSearch] = useState("");
   const [orders, setOrders] = useState([]);
   const [salesSearch, setSalesSearch] = useState("");
   const [salesPage, setSalesPage] = useState(1);
@@ -3492,13 +3522,13 @@ export default function App() {
   const [user, setUser] = useState(firebaseEnabled ? undefined : null);
   useEffect(() => {
     if (firebaseEnabled) return onAuthStateChanged(auth, setUser);
-    const email = localStorage.getItem("tv-demo-user");
+    const email = safeStorageGet("tv-demo-user");
     setUser(email ? { uid: "demo-user", email } : null);
   }, []);
   const logout = async () => {
     if (firebaseEnabled) await signOut(auth);
     else {
-      localStorage.removeItem("tv-demo-user");
+      safeStorageRemove("tv-demo-user");
       setUser(null);
     }
   };

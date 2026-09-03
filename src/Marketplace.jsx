@@ -21,7 +21,12 @@ function Marketplace() {
   useEffect(() => {
     document.title = "Descubra lojas | Tô Vendendo";
     if (!firebaseEnabled) {
-      const saved = JSON.parse(localStorage.getItem("tv-store") || "null");
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem("tv-store") || "null");
+      } catch {
+        // Storage pode ser bloqueado em previews incorporados.
+      }
       setStores([...(saved?.published ? [saved] : []), demoStore, ...demoMarketplaceStores]);
       setLoading(false);
       return () => { document.title = "Tô Vendendo"; };
