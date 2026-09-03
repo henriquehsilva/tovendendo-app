@@ -2412,6 +2412,23 @@ function Admin({ user, onLogout }) {
                   cuidadosamente os dados antes de publicar a loja.
                 </p>
               </div>
+              <div className="stripe-pricing-card">
+                <div className="stripe-pricing-header">
+                  <div className="stripe-icon">S</div>
+                  <div>
+                    <b>Pagamentos online via Stripe</b>
+                    <p>
+                      Acesse uma plataforma de pagamentos completa com preços
+                      simples e pagamento conforme o uso. Sem tarifas mensais,
+                      ocultas ou de configuração.
+                    </p>
+                  </div>
+                </div>
+                <div className="stripe-pricing-value">
+                  <strong>3,99% + R$ 0,39</strong>
+                  <small>por transação realizada para cartões nacionais</small>
+                </div>
+              </div>
               <div className="stripe-connect-card">
                 <div className="stripe-icon">S</div>
                 <div>
