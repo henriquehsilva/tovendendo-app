@@ -33,6 +33,7 @@ export const demoProducts = [
     categoryId: "acessorios",
     description: "Leve, resistente e perfeita para todos os dias.",
     price: 129.9,
+    cashbackPercent: 10,
     stock: 8,
     unavailable: false,
     imageUrl:

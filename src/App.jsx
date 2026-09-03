@@ -135,6 +135,12 @@ const productStock = (product) =>
   product.stock === undefined || product.stock === null || product.stock === ""
     ? Infinity
     : Math.max(0, Math.floor(Number(product.stock) || 0));
+const productDiscount = (product) =>
+  Math.max(0, Math.min(99, Number(product.cashbackPercent) || 0));
+const productCheckoutPrice = (product) =>
+  Math.round(
+    Number(product.price || 0) * 100 * (1 - productDiscount(product) / 100),
+  ) / 100;
 const instagramHandle = (value) =>
   String(value || "")
     .trim()
@@ -798,7 +804,7 @@ function StorePage() {
     0,
   );
   const total = purchasable.reduce(
-    (sum, p) => sum + (cart[p.id] || 0) * Number(p.price),
+    (sum, p) => sum + (cart[p.id] || 0) * productCheckoutPrice(p),
     0,
   );
   const change = (p, delta) =>
@@ -1068,7 +1074,7 @@ function StorePage() {
                 <div className="cart-row" key={p.id}>
                   <div>
                     <b>{p.name}</b>
-                    <small>{money(p.price)} cada</small>
+                    <small>{money(productCheckoutPrice(p))} cada</small>
                     {(cart[p.id] || 0) >= productStock(p) && (
                       <small className="stock-limit-message">
                         Limite do estoque atingido
@@ -1542,6 +1548,18 @@ function ProductCard({ store, product, quantity, onChange }) {
               {descriptionExpanded ? "Mostrar menos" : "Mostrar mais"}
             </button>
           )}
+          {productDiscount(product) > 0 && (
+            <div className="site-discount-message">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3.4 13.4a2 2 0 0 1-.6-1.4V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.4 7a2 2 0 0 1 0 2.8Z" />
+                <circle cx="8" cy="8" r="1.3" />
+              </svg>
+              <span>
+                Finalizando sua compra no site, você tem{" "}
+                <b>{productDiscount(product)}% de desconto</b> neste item.
+              </span>
+            </div>
+          )}
           {Number.isFinite(productStock(product)) && !productUnavailable(product) && (
             <small className="product-stock">
               {productStock(product)} {productStock(product) === 1
@@ -1555,7 +1573,12 @@ function ProductCard({ store, product, quantity, onChange }) {
             </small>
           )}
           <div className="product-bottom">
-            <b>{money(product.price)}</b>
+            <div className="product-price">
+              {productDiscount(product) > 0 && (
+                <small>{money(product.price)}</small>
+              )}
+              <b>{money(productCheckoutPrice(product))}</b>
+            </div>
             {productUnavailable(product) ? (
               <button disabled>Indisponível</button>
             ) : quantity ? (
@@ -2242,6 +2265,7 @@ function Admin({ user, onLogout }) {
         description: "",
         price: 0,
         stock: 1,
+        cashbackPercent: 0,
         unavailable: false,
         active: true,
         imageUrl: "",
@@ -2282,6 +2306,14 @@ function Admin({ user, onLogout }) {
       Number(product.stock) < 0
     ) {
       setSaved("Informe a quantidade disponível do produto.");
+      return;
+    }
+    if (
+      !Number.isFinite(Number(product.cashbackPercent || 0)) ||
+      Number(product.cashbackPercent || 0) < 0 ||
+      Number(product.cashbackPercent || 0) > 99
+    ) {
+      setSaved("Informe um desconto entre 0% e 99%.");
       return;
     }
     setProducts((current) =>
@@ -2612,7 +2644,7 @@ function Admin({ user, onLogout }) {
                         changeProductDraft("imageUrls", urls)
                       }
                     />
-                    <div className="inline-fields">
+                    <div className="inline-fields product-commercial-fields">
                       <CurrencyField
                         label="Preço"
                         value={productEditor.value.price}
@@ -2640,6 +2672,28 @@ function Admin({ user, onLogout }) {
                                         Number(event.target.value) || 0,
                                       ),
                                     ),
+                              )
+                            }
+                          />
+                        </div>
+                      </label>
+                      <label className="field">
+                        <span>Cashback no site (%)</span>
+                        <div>
+                          <input
+                            type="number"
+                            min="0"
+                            max="99"
+                            step="0.01"
+                            inputMode="decimal"
+                            value={productEditor.value.cashbackPercent ?? 0}
+                            onChange={(event) =>
+                              changeProductDraft(
+                                "cashbackPercent",
+                                Math.max(
+                                  0,
+                                  Math.min(99, Number(event.target.value) || 0),
+                                ),
                               )
                             }
                           />
@@ -2720,6 +2774,9 @@ function Admin({ user, onLogout }) {
                           {money(product.price)} · {Number.isFinite(productStock(product))
                             ? `${productStock(product)} em estoque`
                             : "Quantidade não definida"}
+                          {productDiscount(product) > 0
+                            ? ` · ${productDiscount(product)}% de desconto`
+                            : ""}
                         </span>
                       </div>
                       <span

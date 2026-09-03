@@ -1,4 +1,9 @@
-import { priceInCents, safeQuantity } from "./_orders.js";
+import {
+  discountPercent,
+  discountedPriceInCents,
+  priceInCents,
+  safeQuantity,
+} from "./_orders.js";
 
 export const requestedProducts = (items) => {
   const quantities = new Map();
@@ -32,11 +37,17 @@ export async function reserveOrderStock({
       const snapshot = await transaction.get(ref);
       const data = snapshot.data();
       const stock = finiteStock(data?.stock);
-      const unitPriceCents = priceInCents(data?.price);
+      const originalUnitPriceCents = priceInCents(data?.price);
+      const appliedDiscount = discountPercent(data?.cashbackPercent);
+      const unitPriceCents = discountedPriceInCents(
+        data?.price,
+        appliedDiscount,
+      );
       if (
         !snapshot.exists ||
         data.unavailable === true ||
         data.active === false ||
+        !Number.isSafeInteger(originalUnitPriceCents) ||
         !Number.isSafeInteger(unitPriceCents) ||
         unitPriceCents <= 0
       )
@@ -54,6 +65,8 @@ export async function reserveOrderStock({
         quantity: item.quantity,
         stock,
         unitPriceCents,
+        originalUnitPriceCents,
+        appliedDiscount,
       });
     }
     const items = products.map((product) => ({
@@ -61,6 +74,8 @@ export async function reserveOrderStock({
       name: product.data.name,
       quantity: product.quantity,
       unitPrice: product.unitPriceCents / 100,
+      originalUnitPrice: product.originalUnitPriceCents / 100,
+      discountPercent: product.appliedDiscount,
     }));
     const totalCents = products.reduce(
       (total, product) => total + product.unitPriceCents * product.quantity,

@@ -19,6 +19,12 @@ export const safeQuantity = (value) =>
 
 export const priceInCents = (value) => Math.round(Number(value) * 100);
 
+export const discountPercent = (value) =>
+  Math.max(0, Math.min(99, Number(value) || 0));
+
+export const discountedPriceInCents = (price, percentage) =>
+  Math.round(priceInCents(price) * (1 - discountPercent(percentage) / 100));
+
 export const plainProductDescription = (value) =>
   String(value || "")
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   cleanCustomer,
+  discountedPriceInCents,
   plainProductDescription,
   priceInCents,
   safeQuantity,
@@ -28,6 +29,8 @@ test("limita quantidades e converte o preço para centavos", () => {
   assert.equal(safeQuantity(3.9), 3);
   assert.equal(safeQuantity(500), 99);
   assert.equal(priceInCents(129.9), 12990);
+  assert.equal(discountedPriceInCents(129.9, 10), 11691);
+  assert.equal(discountedPriceInCents(100, 150), 100);
 });
 
 test("converte descrição formatada em texto simples para o checkout", () => {
