@@ -1781,6 +1781,13 @@ function Admin({ user, onLogout }) {
     setStore((s) => ({ ...s, payment: { ...s.payment, [key]: value } }));
   const categories = storeCategories(store, products);
   const filteredOrders = orders.filter((order) => {
+    if (
+      order.provider === "stripe" &&
+      !["paid", "payment_failed", "expired", "payment_review"].includes(
+        order.status,
+      )
+    )
+      return false;
     const term = normalizeSearch(salesSearch);
     if (!term) return true;
     const status =
