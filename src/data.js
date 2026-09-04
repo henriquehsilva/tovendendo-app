@@ -38,6 +38,7 @@ export const demoProducts = [
     description: "Leve, resistente e perfeita para todos os dias.",
     price: 129.9,
     cashbackPercent: 10,
+    installments: 6,
     stock: 8,
     unavailable: false,
     imageUrl:
@@ -50,6 +51,7 @@ export const demoProducts = [
     categoryId: "casa",
     description: "Luz aconchegante com design contemporâneo.",
     price: 89.9,
+    installments: 3,
     stock: 5,
     unavailable: false,
     imageUrl:
@@ -62,6 +64,7 @@ export const demoProducts = [
     categoryId: "beleza",
     description: "Um presente delicado para uma pausa especial.",
     price: 74.5,
+    installments: 2,
     stock: 0,
     unavailable: true,
     imageUrl:

@@ -44,6 +44,7 @@ import BrazilianCityPicker from "./BrazilianCityPicker";
 import CategoryAutocomplete from "./CategoryAutocomplete";
 import CustomDomainSetup from "./CustomDomainSetup";
 import { isValidDomain } from "./customDomain";
+import { installmentMessage, productInstallments } from "./productInstallments";
 import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
 import {
   formatDescriptionSelection,
@@ -857,6 +858,8 @@ function StorePage() {
     (sum, p) => sum + (cart[p.id] || 0) * productCheckoutPrice(p),
     0,
   );
+  const cartInstallments = purchasable.reduce((maximum, product) =>
+    cart[product.id] ? Math.max(maximum, productInstallments(product.installments)) : maximum, 0);
   const change = (p, delta) =>
     setCart((c) => ({
       ...c,
@@ -1256,8 +1259,9 @@ function StorePage() {
               Escolha como deseja concluir o pagamento.
             </small>
             <small className="installment-note">
-              parcelamentos serão processados apenas no pagamento presencial na
-              loja pela maquininha. obs.: será cobrada a taxa da maquininha.
+              {cartInstallments > 1
+                ? `Mais flexibilidade para você: itens selecionados podem ser parcelados em até ${cartInstallments}x na maquininha, no momento da entrega ou retirada. A operadora poderá acrescentar a taxa do parcelamento.`
+                : "O pagamento na maquininha pode ser feito no momento da entrega ou retirada. Consulte as condições disponíveis com a loja."}
             </small>
             {error && <p className="error">{error}</p>}
           </section>
@@ -1641,6 +1645,9 @@ function ProductCard({ store, product, quantity, onChange }) {
               </span>
             </div>
           )}
+          {installmentMessage(product.installments) && (
+            <div className="product-installment-info"><b>Pagamento facilitado</b><span>{installmentMessage(product.installments)}</span></div>
+          )}
           {Number.isFinite(productStock(product)) && !productUnavailable(product) && (
             <small className="product-stock">
               {productStock(product)} {productStock(product) === 1
@@ -1751,6 +1758,12 @@ function ProductCard({ store, product, quantity, onChange }) {
                 )}
                 <strong>{money(productCheckoutPrice(product))}</strong>
               </div>
+              {installmentMessage(product.installments) && (
+                <div className="product-installment-info modal-installment-info">
+                  <b>Pagamento facilitado</b>
+                  <span>{installmentMessage(product.installments)}</span>
+                </div>
+              )}
               <ProductDescription value={product.description} />
             </div>
           </section>
@@ -2419,6 +2432,7 @@ function Admin({ user, onLogout }) {
         price: 0,
         stock: 1,
         cashbackPercent: 0,
+        installments: 1,
         unavailable: false,
         active: true,
         imageUrl: "",
@@ -2470,7 +2484,11 @@ function Admin({ user, onLogout }) {
       setSaved("Informe um desconto entre 0% e 99%.");
       return;
     }
-    const normalizedProduct = { ...product, cashbackPercent };
+    const normalizedProduct = {
+      ...product,
+      cashbackPercent,
+      installments: productInstallments(product.installments) || 1,
+    };
     setProducts((current) =>
       productEditor.mode === "create"
         ? [...current, normalizedProduct]
@@ -2816,6 +2834,15 @@ function Admin({ user, onLogout }) {
                               )
                             }
                           />
+                        </div>
+                      </label>
+                      <label className="field">
+                        <span>Parcelamento na maquininha</span>
+                        <div>
+                          <select value={productInstallments(productEditor.value.installments) || 1} onChange={(event) => changeProductDraft("installments", Number(event.target.value))}>
+                            <option value="1">Somente à vista</option>
+                            {Array.from({ length: 11 }, (_, index) => index + 2).map((installments) => <option key={installments} value={installments}>Até {installments}x</option>)}
+                          </select>
                         </div>
                       </label>
                       <label className="field">

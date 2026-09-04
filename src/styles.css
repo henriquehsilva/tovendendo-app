@@ -1135,6 +1135,21 @@ footer {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.product-installment-info {
+  display: grid;
+  gap: 3px;
+  margin-top: 9px;
+  padding: 9px 11px;
+  border-left: 3px solid #24a36b;
+  border-radius: 0 7px 7px 0;
+  background: #edf9f3;
+  color: #315f4d;
+  font-size: .7rem;
+  line-height: 1.4;
+}
+.product-installment-info b { color: #15734a; font-size: .72rem; }
+.modal-installment-info { margin: 14px 0 4px; font-size: .78rem; }
+.modal-installment-info b { font-size: .8rem; }
 .quantity button:disabled {
   cursor: not-allowed;
   opacity: .35;
@@ -1446,7 +1461,10 @@ footer {
   color: var(--muted);
   font-size: 0.76rem;
   line-height: 1.45;
-  text-transform: lowercase;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #f4f8fa;
+  text-align: left;
 }
 .secure {
   display: block;
@@ -2289,7 +2307,7 @@ footer {
   gap: 12px;
 }
 .product-commercial-fields {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .check,
 .switch {
