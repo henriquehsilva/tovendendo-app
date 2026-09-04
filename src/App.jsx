@@ -1023,17 +1023,12 @@ function StorePage() {
               ))}
             </div>
           )}
-          {displayed.length > 1 && (
-            <p className="products-carousel-hint">Arraste para ver mais produtos →</p>
-          )}
           <div
             className={`product-grid ${
               displayed.length > 1 ? "multiple-products" : "single-product"
             }`}
             aria-label={
-              displayed.length > 1
-                ? "Produtos em carrossel"
-                : "Produto da loja"
+              displayed.length > 1 ? "Lista de produtos" : "Produto da loja"
             }
           >
             {displayed.map((product) => (
