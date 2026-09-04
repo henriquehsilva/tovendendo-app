@@ -1829,8 +1829,17 @@ function ProductCard({ store, product, quantity, onChange }) {
             event.target === event.currentTarget && setZoomOpen(false)
           }
         >
-          <section className="image-zoom-modal">
-            <button className="modal-close" onClick={() => setZoomOpen(false)}>
+          <section
+            className="image-zoom-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Fotos de ${product.name}`}
+          >
+            <button
+              className="modal-close"
+              onClick={() => setZoomOpen(false)}
+              aria-label="Fechar fotos ampliadas"
+            >
               ×
             </button>
             <div
@@ -1842,8 +1851,28 @@ function ProductCard({ store, product, quantity, onChange }) {
             >
               <img
                 src={images[Math.min(current, images.length - 1)]}
-                alt={`${product.name} ampliado`}
+                alt={`${product.name} — foto ${current + 1} de ${images.length}`}
               />
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="zoom-carousel-prev"
+                    aria-label="Foto anterior"
+                    onClick={() => move(-1)}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="zoom-carousel-next"
+                    aria-label="Próxima foto"
+                    onClick={() => move(1)}
+                  >
+                    ›
+                  </button>
+                </>
+              )}
               {zoom.visible && (
                 <span
                   className="zoom-lens"
@@ -1866,7 +1895,12 @@ function ProductCard({ store, product, quantity, onChange }) {
                 </span>
               )}
             </div>
-            <p>{product.name}</p>
+            <p>
+              <span>{product.name}</span>
+              {images.length > 1 && (
+                <small>{current + 1} / {images.length}</small>
+              )}
+            </p>
           </section>
         </div>
       )}
