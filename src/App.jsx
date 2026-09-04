@@ -41,6 +41,7 @@ import {
 import Docs from "./Docs";
 import Marketplace from "./Marketplace";
 import BrazilianCityPicker from "./BrazilianCityPicker";
+import CategoryAutocomplete from "./CategoryAutocomplete";
 import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
 import {
   formatDescriptionSelection,
@@ -2443,29 +2444,14 @@ function Admin({ user, onLogout }) {
         : "Produto atualizado. Salve as alterações para publicar ✓",
     );
   };
-  const addCategory = () =>
+  const addCategory = (name) =>
     update("categories", [
       ...categories,
       {
         id: crypto.randomUUID(),
-        name: `Categoria ${categories.length + 1}`,
+        name,
       },
     ]);
-  const renameCategory = (id, name) => {
-    update(
-      "categories",
-      categories.map((category) =>
-        category.id === id ? { ...category, name } : category,
-      ),
-    );
-    setProducts((current) =>
-      current.map((product) =>
-        productCategoryId(product, categories) === id
-          ? { ...product, categoryId: id, category: name }
-          : product,
-      ),
-    );
-  };
   const removeCategory = (category) => {
     const inUse = products.some(
       (product) => productCategoryId(product, categories) === category.id,
@@ -2647,22 +2633,16 @@ function Admin({ user, onLogout }) {
                   <p className="eyebrow">ORGANIZAÇÃO DO CATÁLOGO</p>
                   <h1>Suas categorias.</h1>
                 </div>
-                <button className="button outline" onClick={addCategory}>
-                  + Nova categoria
-                </button>
               </div>
               <p className="intro">
                 Crie as categorias antes dos produtos. Cada categoria pode
                 reunir quantos itens você quiser.
               </p>
+              <CategoryAutocomplete categories={categories} onAdd={addCategory} />
               <div className="category-editors">
                 {categories.map((category) => (
                   <div className="category-editor" key={category.id}>
-                    <Field
-                      label="Nome da categoria"
-                      value={category.name}
-                      onChange={(name) => renameCategory(category.id, name)}
-                    />
+                    <div className="category-editor-name"><b>{category.name}</b><small>Categoria selecionada</small></div>
                     <span>
                       {
                         products.filter(

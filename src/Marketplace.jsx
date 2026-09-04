@@ -4,24 +4,13 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db, firebaseEnabled } from "./firebase";
 import { demoMarketplaceStores, demoStore } from "./data";
 import BrazilianCityPicker from "./BrazilianCityPicker";
+import { categoryIconType } from "./categoryCatalog";
 
 const PAGE_SIZE = 8;
 const normalize = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const categoryNames = (store) => (store.categories || []).map((item) => item.name).filter(Boolean);
-const categoryIcon = (name) => {
-  const normalized = normalize(name);
-  if (normalized.includes("moda") || normalized.includes("acessor")) return "fashion";
-  if (normalized.includes("casa") || normalized.includes("decor")) return "home";
-  if (normalized.includes("beleza")) return "beauty";
-  if (normalized.includes("alimento") || normalized.includes("doce") || normalized.includes("cafe")) return "food";
-  if (normalized.includes("infantil")) return "kids";
-  if (normalized.includes("jardim")) return "garden";
-  if (normalized.includes("papel")) return "paper";
-  return "shop";
-};
-
 function CategoryIcon({ name }) {
-  const type = categoryIcon(name);
+  const type = categoryIconType(name);
   const drawings = {
     fashion: <><path d="M7.5 9 9 5.5l3-1.5 3 1.5L16.5 9l-2.3 1.1V20H9.8v-9.9Z"/><path d="M9 5.5c.6 1.3 1.6 2 3 2s2.4-.7 3-2"/></>,
     home: <><path d="m4 11 8-7 8 7"/><path d="M6.5 9.5V20h11V9.5M10 20v-5h4v5"/></>,
@@ -30,6 +19,12 @@ function CategoryIcon({ name }) {
     kids: <><path d="m12 3 2.2 4.5 4.8.7-3.5 3.5.8 5-4.3-2.4-4.3 2.4.8-5L5 8.2l4.8-.7Z"/><path d="M10 11.5h.1M14 11.5h.1"/></>,
     garden: <><path d="M12 20v-8"/><path d="M12 13C7 13 5 10 5 6c4 0 7 2 7 7ZM12 16c4 0 6-2.5 6-6-3.5 0-6 2-6 6Z"/></>,
     paper: <><path d="M6 3h9l3 3v15H6Z"/><path d="M15 3v4h4M9 11h6M9 15h6"/></>,
+    tech: <><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M9 20h6M12 16v4M8 9h.01"/></>,
+    sport: <><circle cx="12" cy="12" r="8"/><path d="m7 7 3 3-1 4-3 1M17 7l-3 3 1 4 3 1M9 19l3-3 3 3"/></>,
+    pet: <><path d="M8.5 11.5c-2.5 1.8-3.5 4.8-1.5 6.3 1.4 1 3-.1 5-.1s3.6 1.1 5 .1c2-1.5 1-4.5-1.5-6.3-2-1.5-5-1.5-7 0Z"/><circle cx="6.5" cy="8" r="1.5"/><circle cx="17.5" cy="8" r="1.5"/><circle cx="10" cy="5.5" r="1.5"/><circle cx="14" cy="5.5" r="1.5"/></>,
+    auto: <><path d="m5 16-1-3 2-5h12l2 5-1 3Z"/><path d="M6 16v3M18 16v3M4 13h16M7.5 13h.01M16.5 13h.01"/></>,
+    service: <><circle cx="12" cy="8" r="3"/><path d="M6 20c.5-4 2.5-6 6-6s5.5 2 6 6M18 4v4M16 6h4"/></>,
+    leisure: <><path d="M5 4h11a3 3 0 0 1 3 3v12H8a3 3 0 0 1-3-3Z"/><path d="M8 19a3 3 0 0 1 0-6h11M9 8h6"/></>,
     shop: <><path d="M4 9h16l-2-5H6Z"/><path d="M5.5 9v11h13V9M9 20v-6h6v6"/><path d="M4 9c0 2 3 2 4 0 1 2 3 2 4 0 1 2 3 2 4 0 1 2 4 2 4 0"/></>,
   };
   return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round">{drawings[type]}</svg>;
