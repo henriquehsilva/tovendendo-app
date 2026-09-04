@@ -1715,23 +1715,25 @@ function ProductCard({ store, product, quantity, onChange }) {
             </div>
             {productUnavailable(product) ? (
               <button disabled>Indisponível</button>
-            ) : quantity ? (
-              <div className="quantity">
-                <button onClick={() => onChange(product, -1)}>−</button>
-                <span>{quantity}</span>
-                <button
-                  disabled={quantity >= productStock(product)}
-                  onClick={() => onChange(product, 1)}
-                  aria-label={
-                    quantity >= productStock(product)
-                      ? "Quantidade máxima disponível"
-                      : "Adicionar uma unidade"
-                  }
-                >+</button>
-              </div>
             ) : (
               <div className="add-product-action">
-                <button onClick={addWithCelebration}>Adicionar</button>
+                {quantity ? (
+                  <div className="quantity">
+                    <button onClick={() => onChange(product, -1)}>−</button>
+                    <span>{quantity}</span>
+                    <button
+                      disabled={quantity >= productStock(product)}
+                      onClick={() => onChange(product, 1)}
+                      aria-label={
+                        quantity >= productStock(product)
+                          ? "Quantidade máxima disponível"
+                          : "Adicionar uma unidade"
+                      }
+                    >+</button>
+                  </div>
+                ) : (
+                  <button onClick={addWithCelebration}>Adicionar</button>
+                )}
                 {celebrationId > 0 && (
                   <span
                     className="add-celebration"
