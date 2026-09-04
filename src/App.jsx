@@ -1108,7 +1108,6 @@ function StorePage() {
       <footer className="docs-footer">
         <Logo />
         <span>© 2026 Tô Vendendo · Feito para bons negócios.</span>
-        <Link to="/">Voltar ao início</Link>
       </footer>
       {count > 0 && (
         <button className="floating-cart" onClick={() => setCartOpen(true)}>
