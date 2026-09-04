@@ -1474,6 +1474,7 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [sharing, setSharing] = useState(false);
   const [descriptionModalOpen, setDescriptionModalOpen] = useState(false);
   const [celebrationId, setCelebrationId] = useState(0);
+  const celebrationTimer = useRef(null);
   const [zoom, setZoom] = useState({
     visible: false,
     x: 50,
@@ -1487,9 +1488,15 @@ function ProductCard({ store, product, quantity, onChange }) {
   const move = (direction) =>
     setCurrent((index) => (index + direction + images.length) % images.length);
   const addWithCelebration = () => {
+    window.clearTimeout(celebrationTimer.current);
     setCelebrationId((value) => value + 1);
+    celebrationTimer.current = window.setTimeout(() => setCelebrationId(0), 850);
     onChange(product, 1);
   };
+  useEffect(
+    () => () => window.clearTimeout(celebrationTimer.current),
+    [],
+  );
   const moveZoom = (event) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     setZoom({
