@@ -1473,6 +1473,7 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [liked, setLiked] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [descriptionModalOpen, setDescriptionModalOpen] = useState(false);
+  const [celebrationId, setCelebrationId] = useState(0);
   const [zoom, setZoom] = useState({
     visible: false,
     x: 50,
@@ -1485,6 +1486,10 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [zoomOpen, setZoomOpen] = useState(false);
   const move = (direction) =>
     setCurrent((index) => (index + direction + images.length) % images.length);
+  const addWithCelebration = () => {
+    setCelebrationId((value) => value + 1);
+    onChange(product, 1);
+  };
   const moveZoom = (event) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     setZoom({
@@ -1718,7 +1723,32 @@ function ProductCard({ store, product, quantity, onChange }) {
                 >+</button>
               </div>
             ) : (
-              <button onClick={() => onChange(product, 1)}>Adicionar</button>
+              <div className="add-product-action">
+                <button onClick={addWithCelebration}>Adicionar</button>
+                {celebrationId > 0 && (
+                  <span
+                    className="add-celebration"
+                    key={celebrationId}
+                    aria-hidden="true"
+                  >
+                    {Array.from({ length: 14 }, (_, index) => {
+                      const angle = (Math.PI * 2 * index) / 14;
+                      const distance = 34 + (index % 3) * 9;
+                      return (
+                        <i
+                          key={index}
+                          style={{
+                            "--confetti-x": `${Math.cos(angle) * distance}px`,
+                            "--confetti-y": `${Math.sin(angle) * distance}px`,
+                            "--confetti-delay": `${(index % 4) * 18}ms`,
+                            "--confetti-rotation": `${120 + index * 37}deg`,
+                          }}
+                        />
+                      );
+                    })}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           {productUnavailable(product) && <em>Indisponível para compra</em>}

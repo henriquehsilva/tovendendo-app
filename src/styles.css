@@ -1257,6 +1257,51 @@ footer {
   padding: 10px 13px;
   border-radius: 6px;
 }
+.add-product-action {
+  position: relative;
+  flex: 0 0 auto;
+}
+.add-product-action > button {
+  position: relative;
+  z-index: 1;
+  padding: 10px 13px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--ink);
+  color: white;
+  cursor: pointer;
+}
+.add-celebration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.add-celebration i {
+  position: absolute;
+  width: 7px;
+  height: 4px;
+  border-radius: 2px;
+  background: #ffca3a;
+  opacity: 0;
+  animation: add-confetti-pop 720ms cubic-bezier(.16,.75,.3,1) var(--confetti-delay) both;
+}
+.add-celebration i:nth-child(4n + 1) { background: #ff595e; }
+.add-celebration i:nth-child(4n + 2) { background: #55b8e8; }
+.add-celebration i:nth-child(4n + 3) { background: #8ac926; }
+.add-celebration i:nth-child(4n) { background: #a78bfa; }
+@keyframes add-confetti-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.3) rotate(0); }
+  18% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--confetti-x)), calc(-50% + var(--confetti-y))) scale(1) rotate(var(--confetti-rotation)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .add-celebration { display: none; }
+}
 .product-bottom > button:disabled {
   opacity: 0.35;
 }
@@ -4154,7 +4199,8 @@ footer {
   .product-grid.multiple-products .product-price b {
     font-size: 1rem;
   }
-  .product-grid.multiple-products .product-bottom > button {
+  .product-grid.multiple-products .product-bottom > button,
+  .product-grid.multiple-products .add-product-action > button {
     width: 100%;
     padding: 8px 6px;
     font-size: .7rem;
@@ -4297,7 +4343,8 @@ footer {
   .products .product-price b,
   .products .product-grid.multiple-products .product-price b { font-size: 1.08rem; }
   .products .product-bottom > button,
-  .products .product-grid.multiple-products .product-bottom > button {
+  .products .product-grid.multiple-products .product-bottom > button,
+  .products .add-product-action > button {
     width: auto;
     padding: 9px 14px;
     border-radius: 8px;
@@ -4380,6 +4427,7 @@ footer {
   .products .product-grid.multiple-products .product-price b { font-size: .94rem; }
   .products .product-price small { font-size: .6rem; }
   .products .product-bottom > button,
-  .products .product-grid.multiple-products .product-bottom > button { padding: 7px 9px; font-size: .65rem; }
+  .products .product-grid.multiple-products .product-bottom > button,
+  .products .add-product-action > button { padding: 7px 9px; font-size: .65rem; }
   .products .quantity button { width: 28px; height: 28px; }
 }
