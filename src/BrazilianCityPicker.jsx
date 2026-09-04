@@ -1,50 +1,57 @@
-import { useEffect, useRef, useState } from "react";
-import { cityFromAddressComponents, googleMapsEnabled, loadGoogleMaps } from "./googleMaps";
+import { useEffect, useState } from "react";
 
-export default function BrazilianCityPicker({ value, onChange, compact = false, label = "Localização" }) {
-  const inputRef = useRef(null);
-  const autocompleteRef = useRef(null);
-  const onChangeRef = useRef(onChange);
-  const [ready, setReady] = useState(false);
-  const [message, setMessage] = useState(googleMapsEnabled ? "Carregando cidades…" : "Configure o Google Maps para buscar cidades.");
+const API = "https://servicodados.ibge.gov.br/api/v1/localidades";
+let statesCache;
+const citiesCache = new Map();
 
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+const getJson = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Falha ao carregar localidades.");
+  return response.json();
+};
+
+export default function BrazilianCityPicker({ state = "", city = "", onChange, compact = false, label = "Localização" }) {
+  const [states, setStates] = useState(statesCache || []);
+  const [cities, setCities] = useState(citiesCache.get(state) || []);
+  const [loading, setLoading] = useState(!statesCache);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!googleMapsEnabled) return undefined;
+    if (statesCache) return;
     let active = true;
-    loadGoogleMaps().then((maps) => {
-      if (!active || !inputRef.current) return;
-      autocompleteRef.current = new maps.places.Autocomplete(inputRef.current, {
-        componentRestrictions: { country: "br" },
-        fields: ["address_components", "geometry", "name"],
-        types: ["(cities)"],
-      });
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current.getPlace();
-        const selected = cityFromAddressComponents(place.address_components);
-        if (!selected) {
-          setMessage("Selecione uma cidade brasileira exibida na lista.");
-          return;
-        }
-        onChangeRef.current({
-          ...selected,
-          latitude: place.geometry?.location?.lat(),
-          longitude: place.geometry?.location?.lng(),
-        });
-        setMessage("Cidade brasileira selecionada pelo Google Maps.");
-      });
-      setReady(true);
-      setMessage("Digite e selecione uma cidade da lista.");
-    }).catch(() => active && setMessage("Não foi possível carregar o Google Maps."));
+    getJson(`${API}/estados?orderBy=nome`).then((items) => {
+      statesCache = items.map(({ id, nome, sigla }) => ({ id, name: nome, code: sigla }));
+      if (active) setStates(statesCache);
+    }).catch(() => active && setError("Não foi possível carregar os estados."))
+      .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, []);
 
-  return (
-    <label className={`${compact ? "market-city-picker" : "field city-picker"}`}>
-      {!compact && <span>{label}</span>}
-      <div><span aria-hidden="true">⌖</span><input ref={inputRef} value={value || ""} onChange={(event) => onChangeRef.current({ label: event.target.value, pending: true })} placeholder="Busque sua cidade" aria-label={label} autoComplete="off" disabled={!googleMapsEnabled || !ready} /></div>
-      {!compact && <small>{message}</small>}
-    </label>
-  );
+  useEffect(() => {
+    if (!state) { setCities([]); return undefined; }
+    if (citiesCache.has(state)) { setCities(citiesCache.get(state)); return undefined; }
+    let active = true;
+    setLoading(true);
+    getJson(`${API}/estados/${state}/municipios?orderBy=nome`).then((items) => {
+      const normalized = items.map(({ id, nome }) => ({ id, name: nome }));
+      citiesCache.set(state, normalized);
+      if (active) setCities(normalized);
+    }).catch(() => active && setError("Não foi possível carregar as cidades."))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [state]);
+
+  const fields = <div className="brazil-location-fields">
+    <select value={state} onChange={(event) => onChange({ state: event.target.value, city: "", label: "" })} aria-label="Estado" disabled={!states.length}>
+      <option value="">Estado</option>
+      {states.map((item) => <option key={item.id} value={item.code}>{item.code} — {item.name}</option>)}
+    </select>
+    <select value={city} onChange={(event) => onChange({ state, city: event.target.value, label: `${event.target.value} · ${state}` })} aria-label="Cidade" disabled={!state || loading}>
+      <option value="">{loading && state ? "Carregando…" : "Cidade"}</option>
+      {cities.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
+    </select>
+  </div>;
+
+  if (compact) return <div className="market-city-picker">{fields}</div>;
+  return <div className="field city-picker"><span>{label}</span>{fields}<small>{error || "Selecione primeiro o estado e depois a cidade."}</small></div>;
 }

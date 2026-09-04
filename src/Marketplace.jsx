@@ -4,7 +4,6 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db, firebaseEnabled } from "./firebase";
 import { demoMarketplaceStores, demoStore } from "./data";
 import BrazilianCityPicker from "./BrazilianCityPicker";
-import { googleMapsEnabled, reverseGeocodeBrazilianCity } from "./googleMaps";
 
 const PAGE_SIZE = 8;
 const normalize = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -42,8 +41,8 @@ function Marketplace() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas");
-  const [location, setLocation] = useState("");
-  const [locationStatus, setLocationStatus] = useState(googleMapsEnabled ? "Localizando você…" : "Escolha uma cidade");
+  const [locationState, setLocationState] = useState("");
+  const [locationCity, setLocationCity] = useState("");
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
 
@@ -67,38 +66,22 @@ function Marketplace() {
     return () => { document.title = "Tô Vendendo"; };
   }, []);
 
-  useEffect(() => {
-    if (!googleMapsEnabled || !navigator.geolocation) {
-      setLocationStatus("Digite uma cidade brasileira");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => reverseGeocodeBrazilianCity(coords.latitude, coords.longitude)
-        .then((place) => {
-          setLocation(place.label);
-          setLocationStatus(`Usando sua localização: ${place.label}`);
-        })
-        .catch(() => setLocationStatus("Não identificamos sua cidade. Escolha manualmente.")),
-      () => setLocationStatus("Localização não permitida. Escolha sua cidade."),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
-    );
-  }, []);
-
   const categories = useMemo(() => ["Todas", ...new Set(stores.flatMap(categoryNames).sort())], [stores]);
   const filtered = useMemo(() => {
     const term = normalize(search);
     return stores.filter((store) => {
       const searchable = normalize([store.brand, store.tagline, store.description, store.address, ...categoryNames(store)].join(" "));
-      const storeLocation = store.city && store.state ? `${store.city} · ${store.state}` : store.address;
-      return (!term || searchable.includes(term)) && (category === "Todas" || categoryNames(store).includes(category)) && (!location || normalize(storeLocation) === normalize(location));
+      const storeCity = store.city || String(store.address || "").split(" · ")[0];
+      const storeState = store.state || String(store.address || "").split(" · ")[1];
+      return (!term || searchable.includes(term)) && (category === "Todas" || categoryNames(store).includes(category)) && (!locationState || storeState === locationState) && (!locationCity || normalize(storeCity) === normalize(locationCity));
     }).sort((a, b) => sort === "location" ? String(a.address).localeCompare(String(b.address), "pt-BR") : String(a.brand).localeCompare(String(b.brand), "pt-BR"));
-  }, [stores, search, category, location, sort]);
+  }, [stores, search, category, locationState, locationCity, sort]);
 
-  useEffect(() => setPage(1), [search, category, location, sort]);
+  useEffect(() => setPage(1), [search, category, locationState, locationCity, sort]);
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const featuredCategories = categories.filter((item) => item !== "Todas").slice(0, 8);
-  const clear = () => { setSearch(""); setCategory("Todas"); setLocation(""); setLocationStatus("Mostrando lojas de todo o Brasil"); };
+  const clear = () => { setSearch(""); setCategory("Todas"); setLocationState(""); setLocationCity(""); };
 
   return (
     <div className="market-page">
@@ -111,10 +94,10 @@ function Marketplace() {
           <div><p className="eyebrow">O MARKETPLACE DOS PEQUENOS NEGÓCIOS</p><h1>Encontre algo especial perto de você.</h1><p>Explore lojas independentes, descubra produtos únicos e compre diretamente de quem faz acontecer.</p></div>
           <form className="market-search" onSubmit={(event) => event.preventDefault()} role="search">
             <label className="market-search-term"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="O que você está procurando?" aria-label="Buscar lojas, produtos ou categorias" />{search && <button type="button" onClick={() => setSearch("")} aria-label="Limpar busca">×</button>}</label>
-            <BrazilianCityPicker compact label="Escolher cidade brasileira" value={location} onChange={(place) => { setLocation(place.label); setLocationStatus(place.pending ? "Selecione uma sugestão do Google Maps" : `Mostrando lojas em ${place.label}`); }} />
+            <BrazilianCityPicker compact state={locationState} city={locationCity} onChange={(place) => { setLocationState(place.state); setLocationCity(place.city); }} />
             <button className="market-search-submit" type="submit">Buscar</button>
           </form>
-          <p className="market-location-status">⌖ {locationStatus} {location && <button type="button" onClick={() => { setLocation(""); setLocationStatus("Mostrando lojas de todo o Brasil"); }}>Ver todo o Brasil</button>}</p>
+          <p className="market-location-status">⌖ {locationCity ? `Mostrando lojas em ${locationCity} · ${locationState}` : locationState ? `Selecione uma cidade de ${locationState}` : "Mostrando lojas de todo o Brasil"}</p>
           <div className="market-suggestions"><span>Mais buscados:</span>{["Moda", "Casa", "Beleza", "Alimentos"].map((item) => <button key={item} onClick={() => setSearch(item)}>{item}</button>)}</div>
         </section>
 
@@ -134,7 +117,7 @@ function Marketplace() {
             </div>
             <label className="market-sort"><span>Ordenar por</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="name">Nome da loja</option><option value="location">Localização</option></select></label>
           </div>
-          <div className="market-result-head"><div><p className="eyebrow">EXPLORE O MARKETPLACE</p><h2>{loading ? "Buscando lojas…" : `${filtered.length} ${filtered.length === 1 ? "loja encontrada" : "lojas encontradas"}`}</h2></div>{(search || category !== "Todas" || location) && <button onClick={clear}>Limpar filtros ×</button>}</div>
+          <div className="market-result-head"><div><p className="eyebrow">EXPLORE O MARKETPLACE</p><h2>{loading ? "Buscando lojas…" : `${filtered.length} ${filtered.length === 1 ? "loja encontrada" : "lojas encontradas"}`}</h2></div>{(search || category !== "Todas" || locationState) && <button onClick={clear}>Limpar filtros ×</button>}</div>
 
           {error && <div className="market-empty"><b>Algo deu errado</b><p>{error}</p></div>}
           {!loading && !error && visible.length > 0 && <div className="market-grid">{visible.map((store, index) => (

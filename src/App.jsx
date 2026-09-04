@@ -2250,7 +2250,7 @@ function Admin({ user, onLogout }) {
       return null;
     }
     if (!normalized.address || !normalized.city || !normalized.state) {
-      setSaved("Selecione uma cidade brasileira nas sugestões do Google Maps.");
+      setSaved("Selecione o estado e a cidade da loja.");
       setSaving(false);
       setTab("store");
       return null;
@@ -2623,14 +2623,13 @@ function Admin({ user, onLogout }) {
                   prefix="@"
                 />
                 <BrazilianCityPicker
-                  value={store.address}
+                  state={store.state}
+                  city={store.city}
                   onChange={(place) => setStore((current) => ({
                     ...current,
                     address: place.label,
-                    city: place.pending ? "" : place.city,
-                    state: place.pending ? "" : place.state,
-                    latitude: place.pending ? null : place.latitude,
-                    longitude: place.pending ? null : place.longitude,
+                    city: place.city,
+                    state: place.state,
                   }))}
                 />
                 <Field

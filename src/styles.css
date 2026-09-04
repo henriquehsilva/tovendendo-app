@@ -350,7 +350,7 @@ footer {
 }
 .market-search {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px auto;
+  grid-template-columns: minmax(0, 1fr) 410px auto;
   max-width: 1180px;
   height: 72px;
   margin-top: 32px;
@@ -367,14 +367,25 @@ footer {
   gap: 11px;
   padding: 0 15px;
 }
+.market-city-picker,
 .market-city-picker > div {
   display: flex;
   align-items: center;
   width: 100%;
   min-width: 0;
-  gap: 11px;
 }
-.market-city-picker input:disabled { cursor: wait; }
+.market-city-picker {
+  padding: 0 10px;
+  border-left: 1px solid var(--line);
+}
+.market-city-picker select {
+  padding: 0 8px;
+}
+.market-city-picker select:first-child {
+  max-width: 145px;
+  border-right: 1px solid var(--line);
+}
+.market-city-picker select:disabled { color: #8a999f; cursor: wait; }
 .market-location-status {
   max-width: 1180px;
   margin: 12px auto 0;
@@ -613,7 +624,7 @@ footer {
 @media (max-width: 900px) {
   .market-category-list { grid-template-columns: repeat(4, 1fr); row-gap: 25px; }
   .market-confidence { margin-inline: 30px; }
-  .market-search { grid-template-columns: minmax(0, 1fr) 220px auto; }
+  .market-search { grid-template-columns: minmax(0, 1fr) 330px auto; }
   .market-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
@@ -622,6 +633,8 @@ footer {
   .market-search { grid-template-columns: 1fr; height: auto; padding: 8px; }
   .market-search label { min-height: 52px; }
   .market-search-term { border-right: 0; border-bottom: 1px solid var(--line); }
+  .market-city-picker { min-height: 52px; padding: 0; border-left: 0; border-bottom: 1px solid var(--line); }
+  .market-city-picker select:first-child { max-width: 125px; }
   .market-search-submit { min-height: 48px; margin-top: 7px; }
   .market-suggestions { justify-content: center; }
   .market-category-shelf { padding: 38px 18px; }
@@ -1707,16 +1720,15 @@ footer {
 .field textarea {
   resize: vertical;
 }
-.city-picker > div > span {
-  padding-left: 12px;
-  color: var(--blue-dark);
+.brazil-location-fields select + select {
+  border-left: 1px solid var(--line);
 }
 .city-picker > small {
   padding: 0;
   color: var(--muted);
   font-size: .68rem;
 }
-.city-picker input:disabled {
+.city-picker select:disabled {
   background: #f6f8f9;
   color: var(--muted);
 }
