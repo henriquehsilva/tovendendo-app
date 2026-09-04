@@ -1930,6 +1930,8 @@ function Admin({ user, onLogout }) {
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [storeQrCode, setStoreQrCode] = useState("");
+  const [storeLinkCopied, setStoreLinkCopied] = useState(false);
   useEffect(() => {
     if (!user) return;
     if (!firebaseEnabled) {
@@ -1956,6 +1958,27 @@ function Admin({ user, onLogout }) {
         );
       });
   }, [user]);
+  const publicStoreSlug = store?.slug || slugify(store?.brand) || "sua-loja";
+  const publicStoreUrl = `${location.origin}/loja/${publicStoreSlug}`;
+  useEffect(() => {
+    let active = true;
+    QRCode.toDataURL(publicStoreUrl, {
+      width: 240,
+      margin: 2,
+      color: { dark: "#12202d", light: "#ffffff" },
+    }).then((dataUrl) => active && setStoreQrCode(dataUrl))
+      .catch(() => active && setStoreQrCode(""));
+    return () => { active = false; };
+  }, [publicStoreUrl]);
+  const copyStoreLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicStoreUrl);
+      setStoreLinkCopied(true);
+      setTimeout(() => setStoreLinkCopied(false), 2200);
+    } catch {
+      setSaved("Não foi possível copiar o link. Selecione o endereço manualmente.");
+    }
+  };
   useEffect(() => {
     if (!firebaseEnabled || !store?.id || !user) return undefined;
     return onSnapshot(
@@ -3286,11 +3309,19 @@ function Admin({ user, onLogout }) {
                 <span>Loja publicada</span>
               </label>
               <div className="publish-box">
-                <small>ENDEREÇO DA SUA LOJA</small>
-                <strong>
-                  {location.origin}/loja/
-                  {store.slug || slugify(store.brand) || "sua-loja"}
-                </strong>
+                <div className="publish-share-copy">
+                  <small>ENDEREÇO DA SUA LOJA</small>
+                  <strong>{publicStoreUrl}</strong>
+                  <p>Compartilhe este endereço ou peça para o cliente escanear o QR Code.</p>
+                  <div className="publish-share-actions">
+                    <button type="button" className="button outline" onClick={copyStoreLink}>{storeLinkCopied ? "Link copiado ✓" : "Copiar link"}</button>
+                    <Link className="button primary" to={`/loja/${publicStoreSlug}`} target="_blank" rel="noreferrer">Ir para loja ↗</Link>
+                  </div>
+                </div>
+                <div className="publish-store-qr">
+                  {storeQrCode ? <img src={storeQrCode} alt={`QR Code do endereço da loja ${store.brand || "Tô Vendendo"}`} /> : <span>Gerando QR Code…</span>}
+                  <small>ESCANEIE PARA ABRIR</small>
+                </div>
               </div>
               <button
                 className="button primary publish-button"
