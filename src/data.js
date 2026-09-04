@@ -11,6 +11,10 @@ export const demoStore = {
   whatsapp: "5511999999999",
   instagram: "achadinhosdaana",
   address: "São Paulo · SP",
+  city: "São Paulo",
+  state: "SP",
+  latitude: -23.5505,
+  longitude: -46.6333,
   hours: "Seg–Sáb · 9h às 18h",
   palette: "sky",
   categories: [
@@ -90,6 +94,8 @@ export const demoMarketplaceStores = marketplaceSamples.map(
     heroImage,
     palette,
     categories: [{ id: category.toLowerCase(), name: category }],
+    city: address.split(" · ")[0],
+    state: address.split(" · ")[1],
   }),
 );
 export const emptyStore = (uid) => ({

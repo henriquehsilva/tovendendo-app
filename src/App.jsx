@@ -40,6 +40,7 @@ import {
 } from "./data";
 import Docs from "./Docs";
 import Marketplace from "./Marketplace";
+import BrazilianCityPicker from "./BrazilianCityPicker";
 import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
 import {
   formatDescriptionSelection,
@@ -2248,6 +2249,12 @@ function Admin({ user, onLogout }) {
       setSaving(false);
       return null;
     }
+    if (!normalized.address || !normalized.city || !normalized.state) {
+      setSaved("Selecione uma cidade brasileira nas sugestões do Google Maps.");
+      setSaving(false);
+      setTab("store");
+      return null;
+    }
     if (products.length && !categories.length) {
       setSaved("Cadastre uma categoria antes de salvar os produtos.");
       setSaving(false);
@@ -2615,10 +2622,16 @@ function Admin({ user, onLogout }) {
                   onChange={(v) => update("instagram", instagramHandle(v))}
                   prefix="@"
                 />
-                <Field
-                  label="Localização"
+                <BrazilianCityPicker
                   value={store.address}
-                  onChange={(v) => update("address", v)}
+                  onChange={(place) => setStore((current) => ({
+                    ...current,
+                    address: place.label,
+                    city: place.pending ? "" : place.city,
+                    state: place.pending ? "" : place.state,
+                    latitude: place.pending ? null : place.latitude,
+                    longitude: place.pending ? null : place.longitude,
+                  }))}
                 />
                 <Field
                   label="Horário"
