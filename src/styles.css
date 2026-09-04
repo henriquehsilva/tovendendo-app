@@ -705,6 +705,9 @@ footer {
   font-size: 0.86rem;
 }
 .cart-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border: 0;
   background: var(--pale);
   padding: 11px 16px;
@@ -714,12 +717,22 @@ footer {
 .cart-button b {
   display: inline-grid;
   place-items: center;
-  margin-left: 6px;
+  margin-left: 1px;
   width: 21px;
   height: 21px;
   border-radius: 50%;
   background: var(--blue);
   font-size: 0.75rem;
+}
+.bag-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .store-hero {
   min-height: 510px;
@@ -1380,7 +1393,12 @@ footer {
   color: var(--ink);
   font-weight: 800;
   box-shadow: 0 8px 25px #18384c35;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
 }
+.floating-cart strong { margin-left: 5px; font-size: inherit; }
 .modal-backdrop {
   position: fixed;
   inset: 0;

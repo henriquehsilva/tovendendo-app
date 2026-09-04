@@ -56,6 +56,12 @@ const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     Number(value) || 0,
   );
+const BagIcon = () => (
+  <svg className="bag-icon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M5 8.5h14l-1 12H6l-1-12Z" />
+    <path d="M9 10V7a3 3 0 0 1 6 0v3" />
+  </svg>
+);
 const orderDate = (value) => {
   const date = value?.toDate?.() || (value ? new Date(value) : null);
   return date && !Number.isNaN(date.getTime())
@@ -1017,7 +1023,7 @@ function StorePage() {
         <div>
           <span>{store.hours}</span>
           <button className="cart-button" onClick={() => setCartOpen(true)}>
-            Sacola <b>{count}</b>
+            <BagIcon /><span>Sacola</span><b>{count}</b>
           </button>
         </div>
       </header>
@@ -1154,7 +1160,7 @@ function StorePage() {
       </footer>
       {count > 0 && (
         <button className="floating-cart" onClick={() => setCartOpen(true)}>
-          Ver sacola · {money(total)}
+          <BagIcon /><span>Ver sacola</span><strong>{money(total)}</strong>
         </button>
       )}
       {cartOpen && (
