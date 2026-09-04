@@ -4320,6 +4320,24 @@ footer {
 }
 
 @media (max-width: 560px) {
+  .products .section-title {
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .products .section-title h2 {
+    margin-top: 4px;
+    font-size: 1.65rem;
+    line-height: 1.08;
+    letter-spacing: -.045em;
+  }
+  .products .section-title > span { font-size: .72rem; }
+  .store-page .about h2 {
+    overflow-wrap: anywhere;
+    font-size: 1.75rem;
+    line-height: 1.12;
+    letter-spacing: -.045em;
+  }
+  .store-page .docs-footer .product-logo { font-size: 1.05rem; }
   .image-zoom-modal {
     width: calc(100vw - 24px);
     max-height: 78vh;
