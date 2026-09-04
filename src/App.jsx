@@ -761,6 +761,22 @@ function StorePage() {
     });
     return () => unsub();
   }, [slug]);
+  useEffect(() => {
+    if (!store) return undefined;
+    const manifest = document.querySelector('link[rel="manifest"]');
+    const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+    const previousManifest = manifest?.getAttribute("href");
+    const previousIcon = appleIcon?.getAttribute("href");
+    const previousTitle = document.title;
+    if (manifest) manifest.setAttribute("href", `/loja/${store.slug}/manifest.webmanifest`);
+    if (appleIcon && store.logoUrl) appleIcon.setAttribute("href", store.logoUrl);
+    document.title = `${store.brand} | Tô Vendendo`;
+    return () => {
+      if (manifest && previousManifest) manifest.setAttribute("href", previousManifest);
+      if (appleIcon && previousIcon) appleIcon.setAttribute("href", previousIcon);
+      document.title = previousTitle;
+    };
+  }, [store]);
   const visible = products;
   const purchasable = visible.filter((product) => !productUnavailable(product));
   const allCategories = useMemo(

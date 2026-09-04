@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { db, firebaseEnabled } from "./firebase";
 import { demoMarketplaceStores, demoStore } from "./data";
 import BrazilianCityPicker from "./BrazilianCityPicker";
@@ -40,6 +40,8 @@ function Marketplace() {
   const [locationCity, setLocationCity] = useState("");
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
+  const [notificationPermission, setNotificationPermission] = useState(() => typeof Notification === "undefined" ? "unsupported" : Notification.permission);
+  const notificationSnapshotReady = useRef(false);
 
   useEffect(() => {
     document.title = "Descubra lojas | Tô Vendendo";
@@ -60,6 +62,37 @@ function Marketplace() {
       .finally(() => setLoading(false));
     return () => { document.title = "Tô Vendendo"; };
   }, []);
+
+  useEffect(() => {
+    if (!firebaseEnabled || notificationPermission !== "granted") return undefined;
+    notificationSnapshotReady.current = false;
+    return onSnapshot(query(collection(db, "stores"), where("published", "==", true)), async (snapshot) => {
+      if (!notificationSnapshotReady.current) {
+        notificationSnapshotReady.current = true;
+        return;
+      }
+      const registration = await navigator.serviceWorker?.ready;
+      snapshot.docChanges().filter((change) => change.type === "added").forEach((change) => {
+        const store = change.doc.data();
+        registration?.showNotification("Nova loja no Tô Vendendo", {
+          body: `${store.brand} acabou de chegar${store.city ? ` em ${store.city}` : ""}. Confira!`,
+          icon: store.logoUrl || "/icon-192.png",
+          badge: "/favicon.png",
+          tag: `new-store-${change.doc.id}`,
+          data: { url: `/loja/${store.slug}` },
+        });
+      });
+    });
+  }, [notificationPermission]);
+
+  const enableNotifications = async () => {
+    if (typeof Notification === "undefined" || !("serviceWorker" in navigator)) {
+      setNotificationPermission("unsupported");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+  };
 
   const categories = useMemo(() => ["Todas", ...new Set(stores.flatMap(categoryNames).sort())], [stores]);
   const filtered = useMemo(() => {
@@ -104,6 +137,7 @@ function Marketplace() {
         </section>
 
         <section className="market-confidence"><div><i>✓</i><span><b>Lojas reais</b><small>Negócios independentes em um só lugar</small></span></div><div><i>⌖</i><span><b>Compre perto</b><small>Encontre quem vende na sua região</small></span></div><div><i>↗</i><span><b>Contato direto</b><small>Fale com a loja sem intermediários</small></span></div></section>
+        <section className="market-notifications" aria-live="polite"><div><i>♢</i><span><b>Novidades perto de você</b><small>Receba um aviso quando uma nova loja for publicada.</small></span></div>{notificationPermission === "granted" ? <strong>Notificações ativadas ✓</strong> : notificationPermission === "denied" ? <span className="notification-denied">Notificações bloqueadas no navegador</span> : notificationPermission === "unsupported" ? <span className="notification-denied">Indisponível neste navegador</span> : <button className="button primary small" onClick={enableNotifications}>Ativar notificações</button>}</section>
 
         <section className="market-directory">
           <div className="market-toolbar">

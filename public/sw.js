@@ -1,4 +1,4 @@
-const CACHE = 'to-vendendo-v1';
+const CACHE = 'to-vendendo-v2';
 const ASSETS = ['/', '/manifest.webmanifest', '/favicon.png', '/icon-192.png', '/icon-512.png', '/tovendendo-app-logo.png'];
 
 self.addEventListener('install', event => {
@@ -14,4 +14,13 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(fetch(event.request).catch(() => caches.match(event.request).then(response => response || caches.match('/'))));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const destination = event.notification.data?.url || '/lojas';
+  event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(openClients => {
+    const existing = openClients.find(client => new URL(client.url).pathname === destination);
+    return existing ? existing.focus() : clients.openWindow(destination);
+  }));
 });

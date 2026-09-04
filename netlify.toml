@@ -18,6 +18,12 @@
   force = true
 
 [[redirects]]
+  from = "/loja/:slug/manifest.webmanifest"
+  to = "/.netlify/functions/store-manifest?slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
