@@ -4445,6 +4445,15 @@ footer {
     clip-path: inset(50%);
     white-space: nowrap;
   }
+  .products .product-social button:not(:last-child) span {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    color: currentColor;
+    font-size: .68rem;
+  }
   .products .product-social button svg {
     width: 19px;
     height: 19px;

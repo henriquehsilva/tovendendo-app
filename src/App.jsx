@@ -1770,7 +1770,7 @@ function ProductCard({ store, product, quantity, onChange }) {
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
               </svg>
-              <span>{likesCount || "Curtir"}</span>
+              <span>{likesCount}</span>
             </button>
             <button
               onClick={() => setCommentsOpen(true)}
@@ -1780,9 +1780,7 @@ function ProductCard({ store, product, quantity, onChange }) {
                 <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
               </svg>
               <span>
-                {product.commentsCount
-                  ? `${product.commentsCount} comentários`
-                  : "Comentar"}
+                {Number(product.commentsCount) || 0}
               </span>
             </button>
             <button
