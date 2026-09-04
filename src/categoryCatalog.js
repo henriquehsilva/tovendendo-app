@@ -1,16 +1,20 @@
 export const CATEGORY_GROUPS = [
-  ["Moda e acessórios", ["Moda feminina", "Moda masculina", "Moda infantil", "Calçados", "Bolsas", "Joias", "Semijoias", "Relógios", "Óculos", "Acessórios"]],
-  ["Casa e decoração", ["Casa", "Decoração", "Móveis", "Cama, mesa e banho", "Cozinha", "Iluminação", "Organização", "Artesanato", "Cerâmica"]],
-  ["Beleza e cuidados", ["Beleza", "Cosméticos", "Maquiagem", "Perfumaria", "Cuidados com a pele", "Cuidados com o cabelo", "Higiene pessoal", "Barbearia"]],
-  ["Alimentos e bebidas", ["Alimentos", "Doces", "Bolos", "Salgados", "Cafés", "Bebidas", "Congelados", "Produtos naturais", "Padaria", "Restaurante"]],
-  ["Eletrônicos", ["Eletrônicos", "Celulares", "Informática", "Áudio", "Vídeo", "Games", "Acessórios para celular", "Eletrodomésticos"]],
-  ["Esporte e lazer", ["Esportes", "Academia", "Ciclismo", "Camping", "Pesca", "Instrumentos musicais", "Livros", "Colecionáveis"]],
-  ["Infantil", ["Brinquedos", "Bebês", "Roupas infantis", "Material escolar", "Festas infantis"]],
-  ["Pets", ["Pet shop", "Alimentos para pets", "Acessórios para pets", "Higiene para pets"]],
-  ["Papelaria e festas", ["Papelaria", "Convites", "Festas", "Presentes", "Embalagens personalizadas"]],
-  ["Jardim e natureza", ["Jardinagem", "Plantas", "Flores", "Vasos", "Ferramentas"]],
-  ["Automotivo", ["Automóveis", "Motos", "Peças automotivas", "Acessórios automotivos"]],
-  ["Serviços", ["Serviços", "Fotografia", "Design", "Manutenção", "Aulas", "Eventos", "Saúde e bem-estar"]],
+  ["Moda e acessórios", ["Moda feminina", "Moda masculina", "Moda infantil", "Moda praia", "Moda fitness", "Moda íntima", "Calçados", "Tênis", "Bolsas", "Mochilas", "Joias", "Semijoias", "Bijuterias", "Relógios", "Óculos", "Bonés e chapéus", "Acessórios"]],
+  ["Casa e decoração", ["Casa", "Decoração", "Móveis", "Cama, mesa e banho", "Cozinha", "Utilidades domésticas", "Iluminação", "Organização", "Tapetes", "Cortinas", "Artesanato", "Cerâmica", "Antiguidades"]],
+  ["Beleza e cuidados", ["Beleza", "Cosméticos", "Maquiagem", "Perfumaria", "Cuidados com a pele", "Cuidados com o cabelo", "Unhas", "Higiene pessoal", "Barbearia", "Suplementos", "Ótica"]],
+  ["Alimentos e bebidas", ["Alimentos", "Doces", "Bolos", "Salgados", "Marmitas", "Cestas", "Cafés", "Chás", "Bebidas", "Vinhos", "Congelados", "Produtos naturais", "Produtos orgânicos", "Padaria", "Restaurante", "Lanchonete"]],
+  ["Eletrônicos", ["Eletrônicos", "Celulares", "Telefonia", "Informática", "Computadores", "Notebooks", "Impressoras", "Áudio", "Vídeo", "Televisores", "Câmeras", "Drones", "Games", "Consoles", "Acessórios para celular", "Eletrodomésticos", "Climatização"]],
+  ["Esporte e lazer", ["Esportes", "Academia", "Bicicletas", "Peças para bicicletas", "Acessórios para bicicletas", "Ciclismo", "Futebol", "Corrida", "Natação", "Skates", "Patins", "Camping", "Pesca", "Instrumentos musicais", "Livros", "Colecionáveis"]],
+  ["Infantil", ["Brinquedos", "Bebês", "Roupas infantis", "Carrinhos de bebê", "Quarto de bebê", "Material escolar", "Festas infantis"]],
+  ["Pets", ["Pet shop", "Cães", "Gatos", "Aves", "Aquários", "Alimentos para pets", "Acessórios para pets", "Higiene para pets", "Medicamentos veterinários"]],
+  ["Papelaria e festas", ["Papelaria", "Material de escritório", "Agendas", "Convites", "Festas", "Artigos para festas", "Presentes", "Embalagens personalizadas"]],
+  ["Jardim e natureza", ["Jardinagem", "Plantas", "Flores", "Sementes", "Vasos", "Ferramentas", "Piscinas", "Churrasqueiras"]],
+  ["Automotivo", ["Automóveis", "Motos", "Caminhões", "Náutica", "Pneus", "Som automotivo", "Peças automotivas", "Acessórios automotivos", "Peças para motos", "Acessórios para motos"]],
+  ["Construção", ["Materiais de construção", "Ferragens", "Elétrica", "Hidráulica", "Tintas", "Pisos e revestimentos", "Portas e janelas", "Máquinas e ferramentas", "Segurança residencial"]],
+  ["Saúde", ["Saúde e bem-estar", "Farmácia", "Ortopedia", "Equipamentos médicos", "Produtos hospitalares", "Vitaminas", "Cuidados para idosos"]],
+  ["Agro", ["Agropecuária", "Máquinas agrícolas", "Insumos agrícolas", "Rações", "Selaria", "Produtos rurais"]],
+  ["Viagem", ["Malas", "Acessórios de viagem", "Turismo", "Hospedagem"]],
+  ["Serviços", ["Serviços", "Fotografia", "Design", "Gráfica", "Manutenção", "Assistência técnica", "Limpeza", "Costura", "Aulas", "Eventos", "Buffet", "Fretes e mudanças"]],
 ];
 
 export const CATEGORY_OPTIONS = CATEGORY_GROUPS.flatMap(([group, items]) =>
@@ -26,7 +30,7 @@ export function categorySuggestions(search, selected = []) {
   return CATEGORY_OPTIONS.filter(({ name, group }) =>
     !used.has(normalizeCategory(name))
     && (!term || normalizeCategory(`${name} ${group}`).includes(term)),
-  ).slice(0, 12);
+  );
 }
 
 export function categoryIconType(name) {
@@ -36,13 +40,13 @@ export function categoryIconType(name) {
   if (/casa|decor|moveis|cama|cozinha|ilumin|organiz|artesan|ceram/.test(value)) return "home";
   if (/beleza|cosmetic|maquiagem|perfume|pele|cabelo|higiene|barbear/.test(value)) return "beauty";
   if (/alimento|doce|bolo|salgado|cafe|bebida|congelado|padaria|restaurante/.test(value)) return "food";
-  if (/esporte|academia|ciclis|camping|pesca/.test(value)) return "sport";
+  if (/esporte|academia|bicicleta|ciclis|futebol|corrida|natacao|skate|patins|camping|pesca/.test(value)) return "sport";
   if (/infantil|brinquedo|bebe|escolar/.test(value)) return "kids";
   if (/pet|animal/.test(value)) return "pet";
   if (/papel|convite|festa|presente|embalagem/.test(value)) return "paper";
-  if (/jard|planta|flor|vaso|ferramenta/.test(value)) return "garden";
+  if (/jard|planta|flor|semente|vaso|piscina|churrasqueira/.test(value)) return "garden";
   if (/auto|moto|veiculo|peca/.test(value)) return "auto";
-  if (/servico|fotografia|design|manutencao|aula|evento|saude|bem-estar/.test(value)) return "service";
+  if (/servico|fotografia|design|grafica|manutencao|assistencia|limpeza|costura|aula|evento|buffet|frete|mudanca|saude|farmacia|ortopedia|medico|hospital|vitamina|idoso|construcao|ferragem|eletrica|hidraulica|tinta|piso|revestimento|porta|janela|seguranca|agro|agricola|racao|selaria|turismo|hospedagem|viagem/.test(value)) return "service";
   if (/livro|instrumento|colecion/.test(value)) return "leisure";
   return "shop";
 }

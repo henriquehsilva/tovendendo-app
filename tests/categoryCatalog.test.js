@@ -12,4 +12,5 @@ test("associa categorias a famílias visuais", () => {
   assert.equal(categoryIconType("Acessórios para celular"), "tech");
   assert.equal(categoryIconType("Produtos para pets"), "pet");
   assert.equal(categoryIconType("Eletrônicos"), "tech");
+  assert.equal(categoryIconType("Bicicletas"), "sport");
 });
