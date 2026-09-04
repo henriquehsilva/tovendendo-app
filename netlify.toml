@@ -12,14 +12,14 @@
   force = true
 
 [[redirects]]
-  from = "/loja/:slug"
-  to = "/.netlify/functions/store-preview?slug=:slug"
+  from = "/loja/:slug/manifest.webmanifest"
+  to = "/.netlify/functions/store-manifest?slug=:slug"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/loja/:slug/manifest.webmanifest"
-  to = "/.netlify/functions/store-manifest?slug=:slug"
+  from = "/loja/:slug"
+  to = "/.netlify/functions/store-preview?slug=:slug"
   status = 200
   force = true
 

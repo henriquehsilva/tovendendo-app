@@ -2656,8 +2656,8 @@ function Admin({ user, onLogout }) {
     setProductEditor(null);
     setSaved(
       productEditor.mode === "create"
-        ? "Produto adicionado. Salve as alterações para publicar ✓"
-        : "Produto atualizado. Salve as alterações para publicar ✓",
+        ? `Produto adicionado${normalizedProduct.externalOffers.length ? ` com ${normalizedProduct.externalOffers.length} oferta(s) externa(s)` : ""}. Clique em Salvar alterações para publicar ✓`
+        : `Produto atualizado${normalizedProduct.externalOffers.length ? ` com ${normalizedProduct.externalOffers.length} oferta(s) externa(s)` : ""}. Clique em Salvar alterações para publicar ✓`,
     );
   };
   const addCategory = (name) =>
@@ -3102,6 +3102,9 @@ function Admin({ user, onLogout }) {
                           {productDiscount(product) > 0
                             ? ` · ${productDiscount(product)}% de desconto`
                             : ""}
+                          {normalizeExternalOffers(product.externalOffers).length
+                            ? ` · ${normalizeExternalOffers(product.externalOffers).length} oferta(s) externa(s)`
+                            : " · sem ofertas externas"}
                         </span>
                       </div>
                       <span
