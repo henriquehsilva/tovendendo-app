@@ -4082,7 +4082,14 @@ footer {
     max-height: 2.8em;
     font-size: .68rem;
   }
-  .products .description-toggle { display: none; }
+  .products .description-toggle,
+  .products .product-grid.multiple-products .description-toggle {
+    display: block;
+    width: max-content;
+    margin-top: 3px;
+    padding: 1px 0;
+    font-size: .64rem;
+  }
   .products .site-discount-message,
   .products .product-grid.multiple-products .site-discount-message {
     overflow: hidden;
