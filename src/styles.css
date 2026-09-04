@@ -227,6 +227,50 @@ footer {
   color: var(--muted);
   border-top: 1px solid var(--line);
 }
+.external-offers-carousel {
+  position: fixed;
+  left: 22px;
+  bottom: 22px;
+  z-index: 18;
+  width: min(390px, calc(100vw - 28px));
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--blue-dark) 22%, var(--line));
+  border-radius: 16px;
+  background: #fffffff5;
+  box-shadow: 0 18px 50px #10253538;
+  backdrop-filter: blur(12px);
+}
+.external-offers-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbfc;
+}
+.external-offers-editor > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.external-offers-editor > div:first-child span { font-size: .84rem; font-weight: 800; }
+.external-offers-editor > div:first-child button { padding: 7px 10px; border: 1px solid var(--blue-dark); border-radius: 6px; background: white; color: var(--blue-dark); font-size: .7rem; font-weight: 800; cursor: pointer; }
+.external-offers-editor > small { color: var(--muted); font-size: .7rem; line-height: 1.45; }
+.external-offer-fields { display: grid; grid-template-columns: 1fr 130px 1.5fr auto; gap: 9px; align-items: end; padding-top: 10px; border-top: 1px solid var(--line); }
+.external-offer-fields label { display: grid; gap: 5px; }
+.external-offer-fields label span { font-size: .67rem; font-weight: 700; }
+.external-offer-fields input { width: 100%; min-width: 0; height: 40px; padding: 0 10px; border: 1px solid #afbec7; border-radius: 6px; background: white; }
+.external-offer-fields > button { height: 40px; }
+.external-offers-carousel > small { color: var(--blue-dark); font-size: .62rem; font-weight: 800; letter-spacing: .08em; }
+.external-offers-close { position: absolute; top: 9px; right: 10px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: #edf2f4; color: var(--muted); font-size: 1.15rem; cursor: pointer; }
+.external-offer-card { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; margin-top: 10px; }
+.external-offer-card img { width: 64px; height: 64px; border-radius: 9px; object-fit: cover; }
+.external-offer-card div { display: grid; min-width: 0; gap: 2px; }
+.external-offer-card b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.external-offer-card span { color: var(--muted); font-size: .72rem; }
+.external-offer-card strong { color: var(--blue-dark); font-size: 1.05rem; }
+.external-offers-actions { display: grid; grid-template-columns: 34px 1fr 34px; gap: 7px; margin-top: 12px; }
+.external-offers-actions:has(> a:first-child) { grid-template-columns: 1fr; }
+.external-offers-actions button { border: 1px solid var(--line); border-radius: 7px; background: white; font-size: 1.25rem; cursor: pointer; }
+.external-offers-actions a { display: grid; min-height: 38px; place-items: center; border-radius: 7px; background: var(--ink); color: white; font-size: .76rem; font-weight: 800; }
+.external-offers-carousel > p { min-height: 0; margin: 9px 0 0; color: var(--muted); font-size: .6rem; line-height: 1.35; }
 .landing-whatsapp {
   position: fixed;
   right: 24px;
@@ -2860,6 +2904,8 @@ footer {
   .store-nav > div > span {
     display: none;
   }
+  .external-offer-fields { grid-template-columns: 1fr 110px; }
+  .external-offer-fields label:nth-child(3) { grid-column: 1 / -1; }
   .store-nav .brand {
     max-width: calc(100% - 112px);
     font-size: 1.05rem;
@@ -4320,6 +4366,20 @@ footer {
 }
 
 @media (max-width: 560px) {
+  .external-offers-carousel {
+    right: 12px;
+    bottom: 78px;
+    left: 12px;
+    width: auto;
+    padding: 13px;
+    border-radius: 13px;
+  }
+  .external-offer-card { grid-template-columns: 52px 1fr; gap: 10px; }
+  .external-offer-card img { width: 52px; height: 52px; }
+  .external-offers-actions { margin-top: 9px; }
+  .external-offers-editor > div:first-child { align-items: stretch; flex-direction: column; }
+  .external-offer-fields { grid-template-columns: 1fr; }
+  .external-offer-fields label:nth-child(3) { grid-column: auto; }
   .products .section-title {
     align-items: center;
     margin-bottom: 24px;

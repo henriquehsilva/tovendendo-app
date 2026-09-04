@@ -46,6 +46,7 @@ import CustomDomainSetup from "./CustomDomainSetup";
 import { isValidDomain } from "./customDomain";
 import { INSTALLMENT_OPTIONS, installmentMessage, productInstallments } from "./productInstallments";
 import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
+import { externalOfferError, normalizeExternalOffers } from "./externalOffers";
 import {
   formatDescriptionSelection,
   prefixDescriptionLines,
@@ -62,6 +63,44 @@ const BagIcon = () => (
     <path d="M9 10V7a3 3 0 0 1 6 0v3" />
   </svg>
 );
+
+function ExternalOffersCarousel({ products }) {
+  const offers = products.flatMap((product) =>
+    normalizeExternalOffers(product.externalOffers).map((offer) => ({
+      ...offer,
+      id: `${product.id}-${offer.url}`,
+      productName: product.name,
+      image: productImages(product)[0],
+      localPrice: productCheckoutPrice(product),
+    })),
+  );
+  const [visible, setVisible] = useState(true);
+  const [current, setCurrent] = useState(0);
+  if (!visible || !offers.length) return null;
+  const offer = offers[current % offers.length];
+  const move = (direction) =>
+    setCurrent((index) => (index + direction + offers.length) % offers.length);
+  return (
+    <aside className="external-offers-carousel" aria-label="Comparador de preços">
+      <button className="external-offers-close" onClick={() => setVisible(false)} aria-label="Fechar comparador">×</button>
+      <small>COMPARE EM OUTRAS LOJAS</small>
+      <div className="external-offer-card">
+        <img src={offer.image} alt="" />
+        <div>
+          <b>{offer.productName}</b>
+          <span>Aqui: {money(offer.localPrice)}</span>
+          <strong>{offer.marketplace}: {money(offer.price)}</strong>
+        </div>
+      </div>
+      <div className="external-offers-actions">
+        {offers.length > 1 && <button onClick={() => move(-1)} aria-label="Oferta anterior">‹</button>}
+        <a href={offer.url} target="_blank" rel="noopener noreferrer sponsored nofollow">Ver oferta externa ↗</a>
+        {offers.length > 1 && <button onClick={() => move(1)} aria-label="Próxima oferta">›</button>}
+      </div>
+      <p>Preço informado pela loja. Confira valor, frete e condições no anúncio.</p>
+    </aside>
+  );
+}
 const orderDate = (value) => {
   const date = value?.toDate?.() || (value ? new Date(value) : null);
   return date && !Number.isNaN(date.getTime())
@@ -1158,6 +1197,7 @@ function StorePage() {
         <Logo />
         <span>© 2026 Tô Vendendo · Feito para bons negócios.</span>
       </footer>
+      <ExternalOffersCarousel products={visible} />
       {count > 0 && (
         <button className="floating-cart" onClick={() => setCartOpen(true)}>
           <BagIcon /><span>Ver sacola</span><strong>{money(total)}</strong>
@@ -2543,6 +2583,7 @@ function Admin({ user, onLogout }) {
         active: true,
         imageUrl: "",
         imageUrls: [],
+        externalOffers: [],
       },
     });
     setTab("products");
@@ -2555,7 +2596,11 @@ function Admin({ user, onLogout }) {
   const editProduct = (product) =>
     setProductEditor({
       mode: "edit",
-      value: { ...product, imageUrls: [...(product.imageUrls || [])] },
+      value: {
+        ...product,
+        imageUrls: [...(product.imageUrls || [])],
+        externalOffers: (product.externalOffers || []).map((offer) => ({ ...offer })),
+      },
     });
   const finishProduct = () => {
     const product = productEditor?.value;
@@ -2590,10 +2635,16 @@ function Admin({ user, onLogout }) {
       setSaved("Informe um desconto entre 0% e 99%.");
       return;
     }
+    const offerError = externalOfferError(product.externalOffers);
+    if (offerError) {
+      setSaved(offerError);
+      return;
+    }
     const normalizedProduct = {
       ...product,
       cashbackPercent,
       installments: productInstallments(product.installments) || 1,
+      externalOffers: normalizeExternalOffers(product.externalOffers),
     };
     setProducts((current) =>
       productEditor.mode === "create"
@@ -2970,6 +3021,10 @@ function Admin({ user, onLogout }) {
                         </div>
                       </label>
                     </div>
+                    <ExternalOffersEditor
+                      offers={productEditor.value.externalOffers || []}
+                      onChange={(offers) => changeProductDraft("externalOffers", offers)}
+                    />
                     <label className="check">
                       <input
                         type="checkbox"
@@ -3787,6 +3842,30 @@ function CurrencyField({ label, value, onChange }) {
     </label>
   );
 }
+function ExternalOffersEditor({ offers, onChange }) {
+  const updateOffer = (index, key, value) =>
+    onChange(offers.map((offer, offerIndex) =>
+      offerIndex === index ? { ...offer, [key]: value } : offer,
+    ));
+  return (
+    <section className="external-offers-editor">
+      <div>
+        <span>Comparação em outras lojas</span>
+        <button type="button" onClick={() => onChange([...offers, { marketplace: "", price: "", url: "" }])}>+ Adicionar oferta</button>
+      </div>
+      <small>Cadastre anúncios do mesmo produto em marketplaces ou outras lojas. O cliente verá essas opções em um comparador flutuante.</small>
+      {offers.map((offer, index) => (
+        <div className="external-offer-fields" key={index}>
+          <label><span>Loja ou marketplace</span><input value={offer.marketplace || ""} placeholder="Ex.: Mercado Livre" onChange={(event) => updateOffer(index, "marketplace", event.target.value)} /></label>
+          <label><span>Preço anunciado</span><input type="number" min="0.01" step="0.01" inputMode="decimal" value={offer.price ?? ""} placeholder="0,00" onChange={(event) => updateOffer(index, "price", event.target.value)} /></label>
+          <label><span>Link do anúncio</span><input type="url" value={offer.url || ""} placeholder="https://…" onChange={(event) => updateOffer(index, "url", event.target.value)} /></label>
+          <button type="button" className="danger" onClick={() => onChange(offers.filter((_, offerIndex) => offerIndex !== index))}>Remover</button>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function ProductImagesUpload({ values, onUpload, onChange }) {
   const [status, setStatus] = useState("");
   const select = async (event) => {
