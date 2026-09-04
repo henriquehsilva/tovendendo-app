@@ -969,8 +969,8 @@ footer {
 }
 .image-zoom-modal {
   position: relative;
-  width: min(1000px, 95vw);
-  max-height: 92vh;
+  width: min(820px, calc(100vw - 40px));
+  max-height: 86vh;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -990,7 +990,7 @@ footer {
 .zoom-stage img {
   display: block;
   width: 100%;
-  max-height: 82vh;
+  max-height: 70vh;
   object-fit: contain;
 }
 .zoom-stage .zoom-lens img {
@@ -1067,6 +1067,7 @@ footer {
 }
 .product-copy {
   padding: 20px;
+  cursor: pointer;
 }
 .product-copy > small {
   color: var(--blue-dark);
@@ -1076,6 +1077,23 @@ footer {
 .product-copy h3 {
   font-size: 1.3rem;
   margin: 7px 0;
+}
+.product-details-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.product-details-trigger:focus-visible {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 3px;
+  border-radius: 3px;
 }
 .product-copy p {
   min-height: 43px;
@@ -1208,6 +1226,7 @@ footer {
 .product-installment-info b { color: #15734a; font-size: .72rem; }
 .modal-installment-info { margin: 14px 0 4px; font-size: .78rem; }
 .modal-installment-info b { font-size: .8rem; }
+.modal-discount-message { margin: 14px 0 0; font-size: .78rem; }
 .quantity button:disabled {
   cursor: not-allowed;
   opacity: .35;
@@ -4203,8 +4222,8 @@ footer {
   .products .product-card,
   .products .product-grid.multiple-products .product-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 190px;
-    min-height: 210px;
+    grid-template-columns: minmax(0, 1fr) 160px;
+    min-height: 180px;
     overflow: hidden;
     border-radius: 14px;
     background: #fff;
@@ -4221,7 +4240,7 @@ footer {
     grid-row: 1;
     width: 100%;
     height: 100%;
-    min-height: 210px;
+    min-height: 180px;
   }
   .products .product-photo img { cursor: pointer; }
   .products .product-copy,
@@ -4256,14 +4275,13 @@ footer {
   .products .product-grid.multiple-products .description-toggle { font-size: .66rem; }
   .products .site-discount-message,
   .products .product-grid.multiple-products .site-discount-message {
-    display: block;
-    margin-top: 8px;
-    padding: 5px 8px;
-    border: 0;
-    border-radius: 99px;
-    font-size: .62rem;
+    display: none;
   }
-  .products .site-discount-message svg { display: none; }
+  .products .product-installment-info { display: none; }
+  .products .product-description-modal .modal-discount-message,
+  .products .product-description-modal .modal-installment-info {
+    display: grid;
+  }
   .products .product-stock,
   .products .stock-limit-message,
   .products .product-grid.multiple-products .product-stock,
@@ -4302,17 +4320,32 @@ footer {
 }
 
 @media (max-width: 560px) {
+  .image-zoom-modal {
+    width: calc(100vw - 24px);
+    max-height: 78vh;
+    border-radius: 12px;
+  }
+  .zoom-stage img { max-height: 62vh; }
+  .zoom-carousel-prev,
+  .zoom-carousel-next {
+    width: 40px;
+    height: 40px;
+    font-size: 1.7rem;
+  }
+  .zoom-carousel-prev { left: 10px; }
+  .zoom-carousel-next { right: 10px; }
+  .image-zoom-modal p { padding: 11px 14px; font-size: .86rem; }
   .products.section { padding-inline: 14px; }
   .products .product-grid,
   .products .product-grid.multiple-products { gap: 10px; }
   .products .product-card,
   .products .product-grid.multiple-products .product-card {
-    grid-template-columns: minmax(0, 1fr) 116px;
-    min-height: 168px;
+    grid-template-columns: minmax(0, 1fr) 108px;
+    min-height: 148px;
     border-radius: 11px;
   }
   .products .product-photo,
-  .products .product-grid.multiple-products .product-photo { min-height: 168px; }
+  .products .product-grid.multiple-products .product-photo { min-height: 148px; }
   .products .product-copy,
   .products .product-grid.multiple-products .product-copy { padding: 13px; }
   .products .product-copy h3,
@@ -4321,22 +4354,6 @@ footer {
   .products .product-grid.multiple-products .product-description-summary {
     max-height: 2.8em;
     font-size: .68rem;
-  }
-  .products .description-toggle,
-  .products .product-grid.multiple-products .description-toggle {
-    display: block;
-    width: max-content;
-    margin-top: 3px;
-    padding: 1px 0;
-    font-size: .64rem;
-  }
-  .products .site-discount-message,
-  .products .product-grid.multiple-products .site-discount-message {
-    overflow: hidden;
-    max-width: 100%;
-    padding: 4px 6px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   .products .product-stock { display: none; }
   .products .product-bottom,

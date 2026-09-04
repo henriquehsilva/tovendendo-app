@@ -1471,12 +1471,7 @@ function ProductCard({ store, product, quantity, onChange }) {
   const [likesCount, setLikesCount] = useState(Number(product.likesCount) || 0);
   const [liked, setLiked] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [descriptionModalOpen, setDescriptionModalOpen] = useState(false);
-  const plainDescription = stripDescriptionFormatting(product.description);
-  const descriptionCanExpand =
-    plainDescription.length > 100 ||
-    String(product.description || "").split("\n").length > 2;
   const [zoom, setZoom] = useState({
     visible: false,
     x: 50,
@@ -1524,11 +1519,6 @@ function ProductCard({ store, product, quantity, onChange }) {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [descriptionModalOpen]);
-  const showFullDescription = () => {
-    if (window.matchMedia("(max-width: 780px)").matches)
-      setDescriptionModalOpen(true);
-    else setDescriptionExpanded((expanded) => !expanded);
-  };
   const like = async () => {
     if (liked) return;
     let visitorId;
@@ -1656,28 +1646,26 @@ function ProductCard({ store, product, quantity, onChange }) {
             <span className="availability-badge">Indisponível</span>
           )}
         </div>
-        <div className="product-copy">
+        <div
+          className="product-copy"
+          onClick={(event) => {
+            if (!event.target.closest("button, a")) setDescriptionModalOpen(true);
+          }}
+        >
           <small>{product.category || "Produto"}</small>
-          <h3>{product.name}</h3>
-          <div
-            className={[
-              "product-description-summary",
-              descriptionExpanded ? "expanded" : "",
-            ].join(" ")}
-          >
-          <ProductDescription value={product.description} />
-          </div>
-          {descriptionCanExpand && (
+          <h3>
             <button
               type="button"
-              className="description-toggle"
-              aria-expanded={descriptionExpanded || descriptionModalOpen}
+              className="product-details-trigger"
+              onClick={() => setDescriptionModalOpen(true)}
               aria-haspopup="dialog"
-              onClick={showFullDescription}
             >
-              {descriptionExpanded ? "Mostrar menos" : "Mostrar mais"}
+              {product.name}
             </button>
-          )}
+          </h3>
+          <div className="product-description-summary">
+            <ProductDescription value={product.description} />
+          </div>
           {productDiscount(product) > 0 && (
             <div className="site-discount-message">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1803,6 +1791,17 @@ function ProductCard({ store, product, quantity, onChange }) {
                 )}
                 <strong>{money(productCheckoutPrice(product))}</strong>
               </div>
+              {productDiscount(product) > 0 && (
+                <div className="site-discount-message modal-discount-message">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3.4 13.4a2 2 0 0 1-.6-1.4V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.4 7a2 2 0 0 1 0 2.8Z" />
+                    <circle cx="8" cy="8" r="1.3" />
+                  </svg>
+                  <span>
+                    Comprando pelo site, você recebe <b>{productDiscount(product)}% de desconto</b>. O valor já está aplicado no preço acima.
+                  </span>
+                </div>
+              )}
               {installmentMessage(product.installments) && (
                 <div className="product-installment-info modal-installment-info">
                   <b>Pagamento facilitado</b>
