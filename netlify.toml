@@ -12,6 +12,12 @@
   force = true
 
 [[redirects]]
+  from = "/loja/:slug"
+  to = "/.netlify/functions/store-preview?slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
