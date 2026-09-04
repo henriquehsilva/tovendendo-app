@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#55b8e8" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <meta name="googlebot" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="author" content="Tô Vendendo" />
     <meta
       name="description"
       content="Crie sua loja virtual, organize seus produtos e receba por Pix ou Stripe."
@@ -54,10 +57,58 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://tovendendo.app/#organization",
+            "name": "Tô Vendendo",
+            "url": "https://tovendendo.app/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://tovendendo.app/tovendendo-app-logo.png",
+              "width": 834,
+              "height": 612
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://tovendendo.app/#website",
+            "url": "https://tovendendo.app/",
+            "name": "Tô Vendendo",
+            "description": "Plataforma brasileira para criar lojas virtuais, publicar produtos, controlar estoque e receber pagamentos.",
+            "publisher": { "@id": "https://tovendendo.app/#organization" },
+            "inLanguage": "pt-BR"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Tô Vendendo",
+            "url": "https://tovendendo.app/",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "description": "Crie uma loja virtual responsiva, organize produtos e estoque e venda com Pix, cartão ou pagamento na entrega.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "BRL",
+              "description": "Criação gratuita de loja virtual"
+            }
+          }
+        ]
+      }
+    </script>
     <title>Tô Vendendo — sua loja pronta para vender</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main>
+        <h1>Crie sua loja virtual e comece a vender online</h1>
+        <p>O Tô Vendendo ajuda pequenos negócios a publicar produtos, controlar estoque e receber pagamentos por Pix, cartão ou na entrega.</p>
+        <nav><a href="/lojas">Encontrar lojas</a> <a href="/doc">Conhecer os recursos</a> <a href="/admin/login">Criar minha loja</a></nav>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
