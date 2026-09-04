@@ -42,6 +42,8 @@ import Docs from "./Docs";
 import Marketplace from "./Marketplace";
 import BrazilianCityPicker from "./BrazilianCityPicker";
 import CategoryAutocomplete from "./CategoryAutocomplete";
+import CustomDomainSetup from "./CustomDomainSetup";
+import { isValidDomain } from "./customDomain";
 import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
 import {
   formatDescriptionSelection,
@@ -2289,6 +2291,12 @@ function Admin({ user, onLogout }) {
       setTab("store");
       return null;
     }
+    if (normalized.customDomain && !isValidDomain(normalized.customDomain)) {
+      setSaved("Informe um domínio válido, sem protocolo ou caminhos.");
+      setSaving(false);
+      setTab("publish");
+      return null;
+    }
     if (products.length && !categories.length) {
       setSaved("Cadastre uma categoria antes de salvar os produtos.");
       setSaving(false);
@@ -3333,6 +3341,7 @@ function Admin({ user, onLogout }) {
                   <small>ESCANEIE PARA ABRIR</small>
                 </div>
               </div>
+              <CustomDomainSetup value={store.customDomain} destination={publicStoreUrl} onChange={(value) => update("customDomain", value)} />
               <button
                 className="button primary publish-button"
                 disabled={saving}
