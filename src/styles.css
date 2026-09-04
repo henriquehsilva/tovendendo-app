@@ -1988,6 +1988,17 @@ footer {
   gap: 14px;
   margin-top: 22px;
 }
+.manual-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 12px;
+}
+.refund-order-button {
+  border-color: #c65a63 !important;
+  color: #a52e3a;
+}
+.refund-order-button:hover { background: #fff1f2; }
 .sale-card {
   padding: 18px;
   border: 1px solid var(--line);

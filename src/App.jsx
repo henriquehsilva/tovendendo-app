@@ -896,7 +896,8 @@ function StorePage() {
         confirmedInstallments = Number(data.installments) || confirmedInstallments;
       } else {
         orderId = crypto.randomUUID();
-        const order = { id: orderId, customer: normalizeCustomer(customer), provider: "delivery", paymentMethod: "card_on_delivery", status: "pending_confirmation", installments: selectedInstallments, total, createdAt: new Date().toISOString(), items: selected.map((product) => ({ productId: product.id, name: product.name, quantity: cart[product.id], unitPrice: productCheckoutPrice(product) })) };
+        const orderItems = selected.map((product) => ({ productId: product.id, name: product.name, quantity: cart[product.id], unitPrice: productCheckoutPrice(product) }));
+        const order = { id: orderId, customer: normalizeCustomer(customer), provider: "delivery", paymentMethod: "card_on_delivery", status: "pending_confirmation", installments: selectedInstallments, total, createdAt: new Date().toISOString(), items: orderItems, stockReserved: true, stockReservations: orderItems.map(({ productId, quantity }) => ({ productId, quantity })) };
         safeStorageSet("tv-orders", JSON.stringify([order, ...(readStoredJson("tv-orders") || [])]));
         const updatedProducts = products.map((product) => cart[product.id] && Number.isFinite(productStock(product)) ? { ...product, stock: Math.max(0, productStock(product) - cart[product.id]) } : product);
         setProducts(updatedProducts);
@@ -2165,8 +2166,12 @@ function Admin({ user, onLogout }) {
           ? "cartao recusado falhou"
           : order.status === "expired"
             ? "checkout expirado"
-            : order.status === "payment_review"
-              ? "revisar pagamento"
+              : order.status === "payment_review"
+                ? "revisar pagamento"
+              : order.status === "refunded"
+                ? "estornado reembolsado"
+              : order.status === "cancelled"
+                ? "cancelado"
               : ["pix", "delivery"].includes(order.provider)
                 ? "pendente de confirmacao"
                 : "aguardando stripe pendente";
@@ -2243,6 +2248,31 @@ function Admin({ user, onLogout }) {
     } finally {
       setSaving(false);
     }
+  };
+  const refundManualOrder = async (order) => {
+    const paid = order.status === "paid";
+    if (!window.confirm(paid ? "Estornar este pedido e devolver os itens ao estoque? A devolução do dinheiro ao cliente deverá ser feita manualmente." : "Cancelar este pedido e devolver os itens ao estoque?")) return;
+    setSaving(true);
+    setSaved("Estornando pedido…");
+    try {
+      if (firebaseEnabled) {
+        const token = await user.getIdToken();
+        const response = await fetch("/.netlify/functions/refund-manual-order", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, orderId: order.id }) });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Não foi possível estornar o pedido.");
+      } else {
+        const restoredProducts = products.map((product) => {
+          const reservation = (order.stockReservations || order.items || []).find((item) => item.productId === product.id);
+          return reservation && Number.isFinite(productStock(product)) ? { ...product, stock: productStock(product) + Number(reservation.quantity || 0) } : product;
+        });
+        const updatedOrders = orders.map((item) => item.id === order.id ? { ...item, status: paid ? "refunded" : "cancelled", refundedAt: new Date().toISOString(), stockReleased: true } : item);
+        setProducts(restoredProducts);
+        setOrders(updatedOrders);
+        saveLocal(store, restoredProducts);
+        safeStorageSet("tv-orders", JSON.stringify(updatedOrders));
+      }
+      setSaved(paid ? "Pedido estornado e estoque devolvido ✓ Faça a devolução financeira ao cliente." : "Pedido cancelado e itens devolvidos ao estoque ✓");
+    } catch (error) { setSaved(error.message); } finally { setSaving(false); }
   };
   const refreshStripeSales = async () => {
     setSaving(true);
@@ -3203,6 +3233,8 @@ function Admin({ user, onLogout }) {
                           className={`sale-status ${
                             order.status === "paid"
                               ? "paid"
+                              : ["refunded", "cancelled"].includes(order.status)
+                                ? "failed"
                               : ["payment_failed", "expired"].includes(
                                     order.status,
                                   )
@@ -3212,6 +3244,10 @@ function Admin({ user, onLogout }) {
                         >
                           {order.status === "paid"
                             ? "Pagamento validado"
+                            : order.status === "refunded"
+                              ? "Pedido estornado"
+                            : order.status === "cancelled"
+                              ? "Pedido cancelado"
                             : order.status === "payment_failed"
                               ? "Cartão recusado"
                               : order.status === "expired"
@@ -3254,15 +3290,10 @@ function Admin({ user, onLogout }) {
                           </li>
                         ))}
                       </ul>
-                      {["pix", "delivery"].includes(order.provider) && order.status !== "paid" && (
-                        <button
-                          className="button primary small"
-                          disabled={saving}
-                          onClick={() => confirmManualPayment(order)}
-                        >
-                          Marcar pagamento como validado
-                        </button>
-                      )}
+                      {["pix", "delivery"].includes(order.provider) && !["refunded", "cancelled"].includes(order.status) && <div className="manual-order-actions">
+                        {order.status !== "paid" && <button className="button primary small" disabled={saving} onClick={() => confirmManualPayment(order)}>Marcar pagamento como validado</button>}
+                        <button className="button outline small refund-order-button" disabled={saving} onClick={() => refundManualOrder(order)}>Estornar pedido</button>
+                      </div>}
                     </article>
                   ))
                 ) : (
