@@ -44,7 +44,7 @@ import BrazilianCityPicker from "./BrazilianCityPicker";
 import CategoryAutocomplete from "./CategoryAutocomplete";
 import CustomDomainSetup from "./CustomDomainSetup";
 import { isValidDomain } from "./customDomain";
-import { installmentMessage, productInstallments } from "./productInstallments";
+import { INSTALLMENT_OPTIONS, installmentMessage, productInstallments } from "./productInstallments";
 import { paidOrdersInPeriod, periodSummary } from "./periodReportData";
 import {
   formatDescriptionSelection,
@@ -714,6 +714,8 @@ function StorePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [pixPayment, setPixPayment] = useState(null);
+  const [deliveryOrder, setDeliveryOrder] = useState(null);
+  const [selectedInstallments, setSelectedInstallments] = useState(1);
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -860,6 +862,9 @@ function StorePage() {
   );
   const cartInstallments = purchasable.reduce((maximum, product) =>
     cart[product.id] ? Math.max(maximum, productInstallments(product.installments)) : maximum, 0);
+  useEffect(() => {
+    setSelectedInstallments((current) => Math.min(Math.max(1, current), Math.max(1, cartInstallments)));
+  }, [cartInstallments]);
   const change = (p, delta) =>
     setCart((c) => ({
       ...c,
@@ -870,6 +875,38 @@ function StorePage() {
             Math.max(0, (c[p.id] || 0) + delta),
           ),
     }));
+  const payOnDelivery = async () => {
+    if (!count) return;
+    const validationError = customerError(customer);
+    if (validationError) { setError(validationError); return; }
+    setPaying(true);
+    setError("");
+    try {
+      const selected = purchasable.filter((product) => cart[product.id]);
+      const items = selected.map((product) => ({ id: product.id, quantity: cart[product.id] }));
+      let orderId;
+      let confirmedTotal = total;
+      let confirmedInstallments = selectedInstallments;
+      if (firebaseEnabled) {
+        const response = await fetch("/.netlify/functions/create-delivery-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, items, customer: normalizeCustomer(customer), installments: selectedInstallments }) });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Não foi possível registrar o pedido.");
+        orderId = data.orderId;
+        confirmedTotal = Number(data.total);
+        confirmedInstallments = Number(data.installments) || confirmedInstallments;
+      } else {
+        orderId = crypto.randomUUID();
+        const order = { id: orderId, customer: normalizeCustomer(customer), provider: "delivery", paymentMethod: "card_on_delivery", status: "pending_confirmation", installments: selectedInstallments, total, createdAt: new Date().toISOString(), items: selected.map((product) => ({ productId: product.id, name: product.name, quantity: cart[product.id], unitPrice: productCheckoutPrice(product) })) };
+        safeStorageSet("tv-orders", JSON.stringify([order, ...(readStoredJson("tv-orders") || [])]));
+        const updatedProducts = products.map((product) => cart[product.id] && Number.isFinite(productStock(product)) ? { ...product, stock: Math.max(0, productStock(product) - cart[product.id]) } : product);
+        setProducts(updatedProducts);
+        saveLocal(store, updatedProducts);
+      }
+      setDeliveryOrder({ id: orderId, total: confirmedTotal, installments: confirmedInstallments });
+      setCart({});
+      setCartOpen(false);
+    } catch (err) { setError(err.message); } finally { setPaying(false); }
+  };
   const checkout = async () => {
     if (!count) return;
     if (!store.payment?.pixKey?.trim()) {
@@ -1258,11 +1295,11 @@ function StorePage() {
             <small className="secure">
               Escolha como deseja concluir o pagamento.
             </small>
-            <small className="installment-note">
-              {cartInstallments > 1
-                ? `Mais flexibilidade para você: itens selecionados podem ser parcelados em até ${cartInstallments}x na maquininha, no momento da entrega ou retirada. A operadora poderá acrescentar a taxa do parcelamento.`
-                : "O pagamento na maquininha pode ser feito no momento da entrega ou retirada. Consulte as condições disponíveis com a loja."}
-            </small>
+            {cartInstallments > 1 && <div className="delivery-payment-option">
+              <small className="installment-note">Mais flexibilidade para você: escolha abaixo como deseja parcelar em até {cartInstallments}x na maquininha, no momento da entrega ou retirada.</small>
+              <label className="checkout-installments"><span>Quantidade de parcelas</span><select value={selectedInstallments} onChange={(event) => setSelectedInstallments(Number(event.target.value))}>{INSTALLMENT_OPTIONS.filter((installments) => installments <= cartInstallments).map((installments) => <option key={installments} value={installments}>{installments}x de {money(total / installments)}*</option>)}</select><strong>{selectedInstallments}x de {money(total / selectedInstallments)}*</strong><small>* Valor sem a taxa da maquininha. A operadora poderá acrescentar a taxa do parcelamento no momento do pagamento.</small></label>
+              <button className="button delivery-payment-button full" disabled={paying} onClick={payOnDelivery}>{paying ? "Registrando pedido…" : "Pagar na entrega"}<small>Maquininha na entrega ou retirada</small></button>
+            </div>}
             {error && <p className="error">{error}</p>}
           </section>
         </div>
@@ -1275,6 +1312,7 @@ function StorePage() {
           onClose={() => setPixPayment(null)}
         />
       )}
+      {deliveryOrder && <div className="modal-backdrop"><section className="delivery-order-success"><button className="modal-close" onClick={() => setDeliveryOrder(null)}>×</button><span>✓</span><p className="eyebrow">PEDIDO REGISTRADO</p><h2>Combinado! Você paga ao receber.</h2><p>A loja recebeu seu pedido. O pagamento será feito na maquininha no momento da entrega ou retirada.</p><strong>{money(deliveryOrder.total)}{deliveryOrder.installments > 1 ? ` · até ${deliveryOrder.installments}x` : " · à vista"}</strong><small>Pedido {deliveryOrder.id.slice(0, 8).toUpperCase()}</small><button className="button primary full" onClick={() => setDeliveryOrder(null)}>Continuar na loja</button></section></div>}
     </div>
   );
 }
@@ -1962,6 +2000,7 @@ function Admin({ user, onLogout }) {
     if (!firebaseEnabled) {
       setStore(localStore() || emptyStore(user.uid));
       setProducts(localProducts() || demoProducts);
+      setOrders(readStoredJson("tv-orders") || []);
       return;
     }
     getDocs(query(collection(db, "stores"), where("ownerId", "==", user.uid)))
@@ -2128,7 +2167,7 @@ function Admin({ user, onLogout }) {
             ? "checkout expirado"
             : order.status === "payment_review"
               ? "revisar pagamento"
-              : order.provider === "pix"
+              : ["pix", "delivery"].includes(order.provider)
                 ? "pendente de confirmacao"
                 : "aguardando stripe pendente";
     return normalizeSearch(
@@ -2138,7 +2177,7 @@ function Admin({ user, onLogout }) {
         order.customer?.name,
         order.customer?.email,
         order.customer?.phone,
-        order.provider === "pix" ? "pix" : "cartao stripe",
+        order.provider === "pix" ? "pix" : order.provider === "delivery" ? "cartao na entrega maquininha" : "cartao stripe",
         status,
         ...(order.items || []).map((item) => item.name),
       ].join(" "),
@@ -2184,23 +2223,21 @@ function Admin({ user, onLogout }) {
       setGeneratingReport(false);
     }
   };
-  const confirmPix = async (orderId) => {
+  const confirmManualPayment = async (order) => {
     setSaving(true);
-    setSaved("Confirmando pagamento Pix…");
+    setSaved("Confirmando pagamento…");
     try {
-      const token = await user.getIdToken();
-      const response = await fetch("/.netlify/functions/confirm-pix-order", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ storeId: store.id, orderId }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(data.error || "Não foi possível confirmar o Pix.");
-      setSaved("Pagamento Pix confirmado ✓");
+      if (firebaseEnabled) {
+        const token = await user.getIdToken();
+        const response = await fetch("/.netlify/functions/confirm-manual-order", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, orderId: order.id }) });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Não foi possível confirmar o pagamento.");
+      } else {
+        const updated = orders.map((item) => item.id === order.id ? { ...item, status: "paid", paidAt: new Date().toISOString() } : item);
+        setOrders(updated);
+        safeStorageSet("tv-orders", JSON.stringify(updated));
+      }
+      setSaved("Pagamento confirmado ✓");
     } catch (error) {
       setSaved(error.message);
     } finally {
@@ -2841,7 +2878,7 @@ function Admin({ user, onLogout }) {
                         <div>
                           <select value={productInstallments(productEditor.value.installments) || 1} onChange={(event) => changeProductDraft("installments", Number(event.target.value))}>
                             <option value="1">Somente à vista</option>
-                            {Array.from({ length: 11 }, (_, index) => index + 2).map((installments) => <option key={installments} value={installments}>Até {installments}x</option>)}
+                            {INSTALLMENT_OPTIONS.filter((installments) => installments > 1).map((installments) => <option key={installments} value={installments}>Até {installments}x</option>)}
                           </select>
                         </div>
                       </label>
@@ -3156,6 +3193,8 @@ function Admin({ user, onLogout }) {
                         <span>
                           {order.provider === "pix"
                             ? "Pix"
+                            : order.provider === "delivery"
+                              ? `Cartão na entrega${order.installments > 1 ? ` · até ${order.installments}x` : " · à vista"}`
                             : order.status === "paid"
                               ? "Cartão · Stripe confirmado"
                               : "Cartão · Stripe"}
@@ -3179,7 +3218,7 @@ function Admin({ user, onLogout }) {
                                 ? "Checkout expirado"
                                 : order.status === "payment_review"
                                   ? "Revisar pagamento"
-                                  : order.provider === "pix"
+                                  : ["pix", "delivery"].includes(order.provider)
                                     ? "Pendente de confirmação"
                                     : "Aguardando Stripe"}
                         </span>
@@ -3215,11 +3254,11 @@ function Admin({ user, onLogout }) {
                           </li>
                         ))}
                       </ul>
-                      {order.provider === "pix" && order.status !== "paid" && (
+                      {["pix", "delivery"].includes(order.provider) && order.status !== "paid" && (
                         <button
                           className="button primary small"
                           disabled={saving}
-                          onClick={() => confirmPix(order.id)}
+                          onClick={() => confirmManualPayment(order)}
                         >
                           Marcar pagamento como validado
                         </button>
