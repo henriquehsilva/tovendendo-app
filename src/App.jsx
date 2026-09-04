@@ -2919,7 +2919,7 @@ function Admin({ user, onLogout }) {
                         </div>
                       </label>
                       <label className="field">
-                        <span>Cashback no site (%)</span>
+                        <span>Desconto no site (%)</span>
                         <div>
                           <input
                             type="text"
