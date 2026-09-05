@@ -43,6 +43,7 @@ import Marketplace from "./Marketplace";
 import MobileSiteNav from "./MobileSiteNav";
 import BrazilianCityPicker from "./BrazilianCityPicker";
 import CategoryAutocomplete from "./CategoryAutocomplete";
+import { isInstalledApp, storeManifestHref } from "./pwa";
 import CustomDomainSetup from "./CustomDomainSetup";
 import { isValidDomain } from "./customDomain";
 import { INSTALLMENT_OPTIONS, installmentMessage, productInstallments } from "./productInstallments";
@@ -809,7 +810,7 @@ function StorePage() {
     return () => unsub();
   }, [slug]);
   useEffect(() => {
-    const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const standalone = isInstalledApp();
     const mobile = window.matchMedia("(max-width: 780px)").matches;
     if (!standalone && mobile) setShowInstall(true);
     const capturePrompt = (event) => {
@@ -819,6 +820,7 @@ function StorePage() {
     };
     const useCapturedPrompt = () => {
       setInstallPrompt(window.__tvInstallPrompt || null);
+      setInstallUnavailable(false);
       if (mobile) setShowInstall(true);
     };
     const installed = () => { setShowInstall(false); setInstallPrompt(null); };
@@ -846,7 +848,7 @@ function StorePage() {
     const previousThemeColor = themeColor?.getAttribute("content");
     const storeManifest = document.createElement("link");
     storeManifest.rel = "manifest";
-    storeManifest.href = `/.netlify/functions/store-manifest?slug=${encodeURIComponent(store.slug)}`;
+    storeManifest.href = storeManifestHref(store.slug, firebaseEnabled);
     if (manifest) manifest.replaceWith(storeManifest);
     else document.head.appendChild(storeManifest);
     const storeIcon = firebaseEnabled && store.id
@@ -880,11 +882,17 @@ function StorePage() {
       setInstallUnavailable(true);
       return;
     }
-    await prompt.prompt();
-    await prompt.userChoice;
-    window.__tvInstallPrompt = null;
-    setInstallPrompt(null);
-    setShowInstall(false);
+    try {
+      await prompt.prompt();
+      await prompt.userChoice;
+      window.__tvInstallPrompt = null;
+      setInstallPrompt(null);
+      setShowInstall(false);
+    } catch {
+      window.__tvInstallPrompt = null;
+      setInstallPrompt(null);
+      setInstallUnavailable(true);
+    }
   };
   const installInstructions = /iPad|iPhone|iPod/.test(navigator.userAgent)
     ? "No Safari, toque em Compartilhar e em “Adicionar à Tela de Início”. No iPhone, esse comando instala a PWA em modo aplicativo."

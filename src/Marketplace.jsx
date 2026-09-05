@@ -6,6 +6,7 @@ import { demoMarketplaceStores, demoStore } from "./data";
 import BrazilianCityPicker from "./BrazilianCityPicker";
 import { categoryIconType } from "./categoryCatalog";
 import MobileSiteNav from "./MobileSiteNav";
+import { isInstalledApp } from "./pwa";
 
 const PAGE_SIZE = 12;
 const MARKETPLACE_TIMEOUT = 12000;
@@ -99,11 +100,11 @@ function Marketplace() {
   }, [loadAttempt]);
 
   useEffect(() => {
-    const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const standalone = isInstalledApp();
     const mobile = window.matchMedia("(max-width: 780px)").matches;
     if (!standalone && mobile) setShowInstall(true);
     const capturePrompt = (event) => { event.preventDefault(); setInstallPrompt(event); if (mobile) setShowInstall(true); };
-    const useCapturedPrompt = () => { setInstallPrompt(window.__tvInstallPrompt || null); if (mobile) setShowInstall(true); };
+    const useCapturedPrompt = () => { setInstallPrompt(window.__tvInstallPrompt || null); setInstallUnavailable(false); if (mobile) setShowInstall(true); };
     const installed = () => { setShowInstall(false); setInstallPrompt(null); };
     window.addEventListener("beforeinstallprompt", capturePrompt);
     window.addEventListener("tvinstallpromptready", useCapturedPrompt);
@@ -128,11 +129,17 @@ function Marketplace() {
   const requestInstall = async () => {
     const prompt = installPrompt || window.__tvInstallPrompt || await window.__tvWaitForInstallPrompt?.();
     if (!prompt) { setInstallUnavailable(true); return; }
-    await prompt.prompt();
-    await prompt.userChoice;
-    window.__tvInstallPrompt = null;
-    setInstallPrompt(null);
-    setShowInstall(false);
+    try {
+      await prompt.prompt();
+      await prompt.userChoice;
+      window.__tvInstallPrompt = null;
+      setInstallPrompt(null);
+      setShowInstall(false);
+    } catch {
+      window.__tvInstallPrompt = null;
+      setInstallPrompt(null);
+      setInstallUnavailable(true);
+    }
   };
   const installInstructions = /iPad|iPhone|iPod/.test(navigator.userAgent)
     ? "No Safari, toque em Compartilhar e em “Adicionar à Tela de Início”. No iPhone, esse comando instala a PWA em modo aplicativo."

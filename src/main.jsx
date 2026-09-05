@@ -2,6 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
+import { firebaseEnabled } from './firebase.js';
+import { storeManifestHref } from './pwa.js';
 import './styles.css';
 
 const storeSlug = location.pathname.match(/^\/loja\/([^/]+)/)?.[1];
@@ -10,7 +12,7 @@ if (location.pathname === '/lojas') {
 } else if (storeSlug) {
   document.querySelector('link[rel="manifest"]')?.setAttribute(
     'href',
-    `/.netlify/functions/store-manifest?slug=${encodeURIComponent(storeSlug)}`,
+    storeManifestHref(storeSlug, firebaseEnabled),
   );
 }
 
@@ -40,12 +42,12 @@ window.__tvWaitForInstallPrompt = async () => {
 
 createRoot(document.getElementById('root')).render(<BrowserRouter><App /></BrowserRouter>);
 
-if ('serviceWorker' in navigator) {
-  window.__tvPwaReady = navigator.serviceWorker
+window.__tvPwaReady = 'serviceWorker' in navigator
+  ? navigator.serviceWorker
     .register('/sw.js', { scope: '/' })
     .then((registration) => {
       registration.update().catch(() => {});
       return navigator.serviceWorker.ready;
     })
-    .catch(() => null);
-}
+    .catch(() => null)
+  : Promise.resolve(null);
