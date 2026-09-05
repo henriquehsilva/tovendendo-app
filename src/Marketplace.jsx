@@ -115,6 +115,24 @@ function Marketplace() {
     };
   }, []);
 
+  useEffect(() => {
+    const manifest = document.querySelector('link[rel="manifest"]');
+    const previousManifest = manifest?.getAttribute("href");
+    const marketplaceManifest = document.createElement("link");
+    marketplaceManifest.rel = "manifest";
+    marketplaceManifest.href = "/marketplace.webmanifest";
+    if (manifest) manifest.replaceWith(marketplaceManifest);
+    else document.head.appendChild(marketplaceManifest);
+    return () => {
+      if (previousManifest) {
+        const restoredManifest = document.createElement("link");
+        restoredManifest.rel = "manifest";
+        restoredManifest.href = previousManifest;
+        marketplaceManifest.replaceWith(restoredManifest);
+      } else marketplaceManifest.remove();
+    };
+  }, []);
+
   const dismissInstall = () => setShowInstall(false);
   const requestInstall = async () => {
     const prompt = installPrompt || window.__tvInstallPrompt;
@@ -238,7 +256,7 @@ function Marketplace() {
           <img src="/tovendendo-app-logo.png" alt="" />
           <div>
             <strong>Instale o Tô Vendendo</strong>
-            <small>{installUnavailable ? "Siga estes passos para instalar:" : "Encontre lojas mais rápido pelo seu celular."}</small>
+            <small>{installUnavailable ? "Siga estes passos para instalar:" : "Instale como aplicativo e abra o marketplace direto da sua tela inicial."}</small>
             {installUnavailable && <em>{installInstructions}</em>}
           </div>
           <button className="install-action" onClick={installUnavailable ? dismissInstall : requestInstall}>{installUnavailable ? "Entendi" : "Instalar"}</button>
