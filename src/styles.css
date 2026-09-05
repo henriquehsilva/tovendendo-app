@@ -19,6 +19,13 @@ html {
 body {
   margin: 0;
 }
+.landing-page { padding-top: 78px; }
+.landing-page .marketing-nav {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  box-shadow: 0 8px 28px rgba(18, 32, 45, .07);
+}
 a {
   color: inherit;
   text-decoration: none;
@@ -688,6 +695,9 @@ footer {
   top: 0;
   z-index: 10;
 }
+.store-mobile-search,
+.store-app-nav,
+.install-app-card { display: none; }
 .brand {
   display: flex;
   min-width: 0;
@@ -2886,6 +2896,7 @@ footer {
   cursor: pointer;
 }
 @media (max-width: 780px) {
+  .landing-page { padding-top: 64px; }
   .marketing-nav,
   .admin-top,
   .store-nav {
@@ -2914,6 +2925,84 @@ footer {
     height: 34px;
     margin-right: 8px;
   }
+  .store-page { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .store-nav {
+    height: 122px;
+    padding: 8px 14px 10px;
+    align-content: center;
+    flex-wrap: wrap;
+    box-shadow: 0 6px 24px rgba(18, 32, 45, .08);
+  }
+  .store-nav > div { margin-left: auto; }
+  .store-nav .cart-button { display: none; }
+  .store-mobile-search {
+    order: 3;
+    width: 100%;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 13px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #f8fbfc;
+  }
+  .store-mobile-search:focus-within { border-color: var(--blue-dark); background: #fff; box-shadow: 0 0 0 3px var(--pale); }
+  .store-mobile-search svg { width: 20px; fill: none; stroke: var(--blue-dark); stroke-width: 1.8; stroke-linecap: round; }
+  .store-mobile-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: .9rem; }
+  .store-mobile-search button { width: 27px; height: 27px; border: 0; border-radius: 50%; background: var(--pale); color: var(--blue-dark); }
+  .store-desktop-search { display: none; }
+  .store-app-nav {
+    position: fixed;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 45;
+    min-height: 66px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 6px;
+    border: 1px solid rgba(220, 231, 237, .9);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 12px 38px rgba(18, 32, 45, .2);
+    backdrop-filter: blur(16px);
+  }
+  .store-app-nav a,
+  .store-app-nav button { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; border-radius: 13px; background: transparent; color: var(--ink); font-size: .66rem; font-weight: 700; cursor: pointer; }
+  .store-app-nav svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+  .store-app-nav a:first-child { color: #168b53; }
+  .store-app-nav a:nth-child(2) { color: #c13584; }
+  .store-app-nav button { background: var(--pale); color: var(--blue-dark); }
+  .store-app-nav .disabled { opacity: .35; pointer-events: none; }
+  .app-bag-wrap { position: relative; line-height: 0; }
+  .app-bag-wrap b { position: absolute; top: -7px; right: -11px; display: grid; min-width: 18px; height: 18px; place-items: center; padding: 0 4px; border: 2px solid white; border-radius: 10px; background: var(--blue-dark); color: white; font-size: .58rem; line-height: 1; }
+  .install-app-card {
+    position: fixed;
+    right: 14px;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    left: 14px;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 11px;
+    padding: 13px 38px 13px 13px;
+    border: 1px solid var(--line);
+    border-radius: 17px;
+    background: #fff;
+    box-shadow: 0 16px 45px rgba(18, 32, 45, .25);
+  }
+  .install-app-card img,
+  .install-fallback { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; }
+  .install-fallback { display: grid; place-items: center; background: var(--blue-dark); color: #fff; font-size: 1.4rem; font-weight: 800; }
+  .install-app-card div { display: grid; gap: 2px; }
+  .install-app-card strong { font-size: .82rem; }
+  .install-app-card small { color: var(--muted); font-size: .67rem; line-height: 1.3; }
+  .install-app-card em { margin-top: 4px; color: var(--blue-dark); font-size: .65rem; font-style: normal; line-height: 1.3; }
+  .install-action { min-height: 36px; padding: 0 12px; border: 0; border-radius: 9px; background: var(--ink); color: #fff; font-size: .7rem; font-weight: 800; }
+  .install-close { position: absolute; top: 3px; right: 5px; width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); font-size: 1.2rem; }
+  .store-page > .floating-cart { display: none; }
   .marketing-nav {
     position: sticky;
     top: 0;

@@ -62,6 +62,15 @@ const BagIcon = () => (
     <path d="M9 10V7a3 3 0 0 1 6 0v3" />
   </svg>
 );
+const WhatsAppIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.3 23.5l5.9-1.6A11.8 11.8 0 0 0 23.8 12c0-3.2-1.2-6.2-3.3-8.5Zm-8.4 18.4c-1.9 0-3.8-.5-5.4-1.5l-.4-.2-3.5.9.9-3.4-.2-.4A9.8 9.8 0 1 1 12 21.9Zm5.4-7.4c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2l-.9 1.1c-.2.2-.3.2-.6.1-1.8-.9-3-1.6-4.2-3.7-.3-.5.3-.5.9-1.7.1-.2 0-.4 0-.6l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.4-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.4 3.7 5.9 5.2 2.2.9 3.1 1 4.2.8.7-.1 1.8-.7 2.1-1.5.3-.7.3-1.4.2-1.5-.2-.3-.5-.4-.8-.5Z" /></svg>
+);
+const InstagramIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9Zm9.25 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" /></svg>
+);
+const SearchIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 5 5" /></svg>
+);
 
 const orderDate = (value) => {
   const date = value?.toDate?.() || (value ? new Date(value) : null);
@@ -314,7 +323,7 @@ function Landing() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
   return (
-    <div>
+    <div className="landing-page">
       <header className={`marketing-nav ${menuOpen ? "menu-open" : ""}`}>
         <Logo />
         <button
@@ -728,6 +737,9 @@ function StorePage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(12);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+  const [showIosHelp, setShowIosHelp] = useState(false);
   const loadMoreRef = useRef(null);
   useEffect(() => {
     if (!firebaseEnabled) {
@@ -774,21 +786,59 @@ function StorePage() {
     return () => unsub();
   }, [slug]);
   useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const mobile = window.matchMedia("(max-width: 780px)").matches;
+    const dismissed = safeStorageGet(`tv-install-dismissed-${slug}`);
+    if (!standalone && mobile && !dismissed) setShowInstall(true);
+    const capturePrompt = (event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+      if (mobile && !dismissed) setShowInstall(true);
+    };
+    const installed = () => { setShowInstall(false); setInstallPrompt(null); };
+    window.addEventListener("beforeinstallprompt", capturePrompt);
+    window.addEventListener("appinstalled", installed);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", capturePrompt);
+      window.removeEventListener("appinstalled", installed);
+    };
+  }, [slug]);
+  useEffect(() => {
     if (!store) return undefined;
     const manifest = document.querySelector('link[rel="manifest"]');
     const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
     const previousManifest = manifest?.getAttribute("href");
     const previousIcon = appleIcon?.getAttribute("href");
     const previousTitle = document.title;
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    const previousAppleTitle = appleTitle?.getAttribute("content");
     if (manifest) manifest.setAttribute("href", `/loja/${store.slug}/manifest.webmanifest`);
     if (appleIcon && store.logoUrl) appleIcon.setAttribute("href", store.logoUrl);
     document.title = `${store.brand} | Tô Vendendo`;
+    if (appleTitle) appleTitle.setAttribute("content", store.brand);
     return () => {
       if (manifest && previousManifest) manifest.setAttribute("href", previousManifest);
       if (appleIcon && previousIcon) appleIcon.setAttribute("href", previousIcon);
       document.title = previousTitle;
+      if (appleTitle && previousAppleTitle) appleTitle.setAttribute("content", previousAppleTitle);
     };
   }, [store]);
+  const dismissInstall = () => {
+    safeStorageSet(`tv-install-dismissed-${slug}`, "1");
+    setShowInstall(false);
+    setShowIosHelp(false);
+  };
+  const requestInstall = async () => {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      await installPrompt.userChoice;
+      setInstallPrompt(null);
+      setShowInstall(false);
+      return;
+    }
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) setShowIosHelp(true);
+    else setShowIosHelp(true);
+  };
   const visible = products;
   const purchasable = visible.filter((product) => !productUnavailable(product));
   const allCategories = useMemo(
@@ -1027,6 +1077,11 @@ function StorePage() {
             <BagIcon /><span>Sacola</span><b>{count}</b>
           </button>
         </div>
+        <label className="store-mobile-search">
+          <SearchIcon />
+          <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar produtos" aria-label="Buscar produtos" />
+          {search && <button onClick={() => setSearch("")} aria-label="Limpar busca">×</button>}
+        </label>
       </header>
       <main id="top">
         <section
@@ -1052,11 +1107,8 @@ function StorePage() {
             </div>
             <span>{visible.length} itens</span>
           </div>
-          <label className="store-search">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m16 16 5 5" />
-            </svg>
+          <label className="store-search store-desktop-search">
+            <SearchIcon />
             <input
               type="search"
               value={search}
@@ -1159,6 +1211,19 @@ function StorePage() {
         <Logo />
         <span>© 2026 Tô Vendendo · Feito para bons negócios.</span>
       </footer>
+      <nav className="store-app-nav" aria-label="Atalhos da loja">
+        <a href={`https://wa.me/${String(store.whatsapp || "").replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Conheci a ${store.brand} pelo site e gostaria de mais informações.`)}`} target="_blank" rel="noreferrer" className={!store.whatsapp ? "disabled" : ""} aria-label="Abrir WhatsApp"><WhatsAppIcon /><span>WhatsApp</span></a>
+        <a href={instagramHandle(store.instagram) ? `https://instagram.com/${instagramHandle(store.instagram)}` : undefined} target="_blank" rel="noreferrer" className={!instagramHandle(store.instagram) ? "disabled" : ""} aria-label="Abrir Instagram"><InstagramIcon /><span>Instagram</span></a>
+        <button onClick={() => setCartOpen(true)} aria-label={`Abrir sacola com ${count} itens`}><span className="app-bag-wrap"><BagIcon />{count > 0 && <b>{count}</b>}</span><span>Sacola</span></button>
+      </nav>
+      {showInstall && (
+        <aside className="install-app-card" role="dialog" aria-label={`Instalar aplicativo ${store.brand}`}>
+          {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <span className="install-fallback">{store.brand?.charAt(0)}</span>}
+          <div><strong>Instale a {store.brand}</strong><small>Acesse mais rápido, como um aplicativo no seu celular.</small>{showIosHelp && <em>{/iPad|iPhone|iPod/.test(navigator.userAgent) ? "No Safari, toque em Compartilhar e depois em Adicionar à Tela de Início." : "Abra o menu do navegador e escolha Instalar app ou Adicionar à tela inicial."}</em>}</div>
+          <button className="install-action" onClick={showIosHelp ? dismissInstall : requestInstall}>{showIosHelp ? "Entendi" : "Instalar"}</button>
+          <button className="install-close" onClick={dismissInstall} aria-label="Agora não">×</button>
+        </aside>
+      )}
       {count > 0 && (
         <button className="floating-cart" onClick={() => setCartOpen(true)}>
           <BagIcon /><span>Ver sacola</span><strong>{money(total)}</strong>
