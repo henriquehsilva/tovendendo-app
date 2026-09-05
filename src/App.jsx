@@ -873,6 +873,9 @@ function StorePage() {
     setInstallPrompt(null);
     setShowInstall(false);
   };
+  const installInstructions = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    ? "No Safari, toque em Compartilhar, escolha “Adicionar à Tela de Início” e depois toque em Adicionar."
+    : "Abra o menu do navegador (⋮), escolha “Instalar app” ou “Adicionar à tela inicial” e confirme.";
   const visible = products;
   const purchasable = visible.filter((product) => !productUnavailable(product));
   const allCategories = useMemo(
@@ -1253,8 +1256,12 @@ function StorePage() {
       {showInstall && (
         <aside className="install-app-card" role="dialog" aria-label={`Instalar aplicativo ${store.brand}`}>
           {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <span className="install-fallback">{store.brand?.charAt(0)}</span>}
-          <div><strong>Instale a {store.brand}</strong><small>{installUnavailable ? "A instalação automática não está disponível neste navegador." : "Acesse mais rápido, como um aplicativo no seu celular."}</small></div>
-          <button className="install-action" onClick={requestInstall}>Instalar</button>
+          <div>
+            <strong>Instale a {store.brand}</strong>
+            <small>{installUnavailable ? "Siga estes passos para instalar:" : "Acesse mais rápido, como um aplicativo no seu celular."}</small>
+            {installUnavailable && <em>{installInstructions}</em>}
+          </div>
+          <button className="install-action" onClick={installUnavailable ? dismissInstall : requestInstall}>{installUnavailable ? "Entendi" : "Instalar"}</button>
           <button className="install-close" onClick={dismissInstall} aria-label="Agora não">×</button>
         </aside>
       )}
