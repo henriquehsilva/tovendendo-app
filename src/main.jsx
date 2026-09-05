@@ -22,7 +22,8 @@ window.addEventListener('beforeinstallprompt', (event) => {
   window.dispatchEvent(new Event('tvinstallpromptready'));
 });
 
-window.__tvWaitForInstallPrompt = () => {
+window.__tvWaitForInstallPrompt = async () => {
+  await window.__tvPwaReady?.catch(() => null);
   if (window.__tvInstallPrompt) return Promise.resolve(window.__tvInstallPrompt);
   return new Promise((resolve) => {
     const ready = () => {
@@ -40,5 +41,11 @@ window.__tvWaitForInstallPrompt = () => {
 createRoot(document.getElementById('root')).render(<BrowserRouter><App /></BrowserRouter>);
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  window.__tvPwaReady = navigator.serviceWorker
+    .register('/sw.js', { scope: '/' })
+    .then((registration) => {
+      registration.update().catch(() => {});
+      return navigator.serviceWorker.ready;
+    })
+    .catch(() => null);
 }

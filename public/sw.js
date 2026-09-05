@@ -1,4 +1,4 @@
-const CACHE = 'to-vendendo-v10';
+const CACHE = 'to-vendendo-v11';
 const ASSETS = ['/', '/lojas', '/manifest.webmanifest', '/marketplace.webmanifest', '/favicon.png', '/icon-192.png', '/icon-512.png', '/tovendendo-app-logo.png', '/default-store-logo.png'];
 
 self.addEventListener('install', event => {
