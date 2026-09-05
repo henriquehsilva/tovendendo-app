@@ -42,11 +42,17 @@ function Marketplace() {
   const [locationCity, setLocationCity] = useState("");
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [installPrompt, setInstallPrompt] = useState(() => window.__tvInstallPrompt || null);
+  const [showInstall, setShowInstall] = useState(false);
+  const [installUnavailable, setInstallUnavailable] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(() => typeof Notification === "undefined" ? "unsupported" : Notification.permission);
   const notificationSnapshotReady = useRef(false);
 
   useEffect(() => {
     document.title = "Descubra lojas | Tô Vendendo";
+    setLoading(true);
+    setError("");
     if (!firebaseEnabled) {
       let saved = null;
       try {
@@ -58,18 +64,54 @@ function Marketplace() {
       setLoading(false);
       return () => { document.title = "Tô Vendendo"; };
     }
+    let active = true;
+    let timeoutId;
     const timeout = new Promise((_, reject) => {
-      window.setTimeout(() => reject(new Error("marketplace-timeout")), MARKETPLACE_TIMEOUT);
+      timeoutId = window.setTimeout(() => reject(new Error("marketplace-timeout")), MARKETPLACE_TIMEOUT);
     });
     Promise.race([
       getDocs(query(collection(db, "stores"), where("published", "==", true))),
       timeout,
     ])
-      .then((snapshot) => setStores(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))))
-      .catch(() => setError("Não foi possível carregar as lojas agora. Verifique sua conexão e tente novamente."))
-      .finally(() => setLoading(false));
-    return () => { document.title = "Tô Vendendo"; };
+      .then((snapshot) => active && setStores(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))))
+      .catch(() => active && setError("Não foi possível carregar as lojas agora. Verifique sua conexão e tente novamente."))
+      .finally(() => {
+        window.clearTimeout(timeoutId);
+        if (active) setLoading(false);
+      });
+    return () => { active = false; window.clearTimeout(timeoutId); document.title = "Tô Vendendo"; };
+  }, [loadAttempt]);
+
+  useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const mobile = window.matchMedia("(max-width: 780px)").matches;
+    if (!standalone && mobile) setShowInstall(true);
+    const capturePrompt = (event) => { event.preventDefault(); setInstallPrompt(event); if (mobile) setShowInstall(true); };
+    const useCapturedPrompt = () => { setInstallPrompt(window.__tvInstallPrompt || null); if (mobile) setShowInstall(true); };
+    const installed = () => { setShowInstall(false); setInstallPrompt(null); };
+    window.addEventListener("beforeinstallprompt", capturePrompt);
+    window.addEventListener("tvinstallpromptready", useCapturedPrompt);
+    window.addEventListener("appinstalled", installed);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", capturePrompt);
+      window.removeEventListener("tvinstallpromptready", useCapturedPrompt);
+      window.removeEventListener("appinstalled", installed);
+    };
   }, []);
+
+  const dismissInstall = () => setShowInstall(false);
+  const requestInstall = async () => {
+    const prompt = installPrompt || window.__tvInstallPrompt;
+    if (!prompt) { setInstallUnavailable(true); return; }
+    await prompt.prompt();
+    await prompt.userChoice;
+    window.__tvInstallPrompt = null;
+    setInstallPrompt(null);
+    setShowInstall(false);
+  };
+  const installInstructions = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    ? "No Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”."
+    : "Abra o menu do navegador (⋮) e escolha “Instalar app” ou “Adicionar à tela inicial”.";
 
   useEffect(() => {
     if (!firebaseEnabled || notificationPermission !== "granted") return undefined;
@@ -160,7 +202,7 @@ function Marketplace() {
           </div>
           <div className="market-result-head"><div><p className="eyebrow">EXPLORE O MARKETPLACE</p><h2>{loading ? "Buscando lojas…" : `${filtered.length} ${filtered.length === 1 ? "loja encontrada" : "lojas encontradas"}`}</h2></div>{(search || category !== "Todas" || locationState) && <button onClick={clear}>Limpar filtros ×</button>}</div>
 
-          {error && <div className="market-empty"><b>Algo deu errado</b><p>{error}</p></div>}
+          {error && <div className="market-empty"><b>Algo deu errado</b><p>{error}</p><button className="button outline" onClick={() => setLoadAttempt((value) => value + 1)}>Tentar novamente</button></div>}
           {!loading && !error && visible.length > 0 && <div className="market-grid">{visible.map((store, index) => (
             <Link className="market-card" to={`/loja/${store.slug}`} key={store.id || store.slug}>
               <div className="market-card-image" style={{ backgroundImage: `url("${store.heroImage}")` }}><span>{index % 3 === 0 ? "Destaque" : "Loja online"}</span></div>
@@ -175,6 +217,18 @@ function Marketplace() {
       </main>
       <footer className="market-footer"><span>© 2026 Tô Vendendo</span><Link to="/doc">Conheça os recursos</Link><Link to="/">Página inicial</Link></footer>
       <MobileSiteNav marketplace />
+      {showInstall && (
+        <aside className="install-app-card" role="dialog" aria-label="Instalar aplicativo Tô Vendendo">
+          <img src="/tovendendo-app-logo.png" alt="" />
+          <div>
+            <strong>Instale o Tô Vendendo</strong>
+            <small>{installUnavailable ? "Siga estes passos para instalar:" : "Encontre lojas mais rápido pelo seu celular."}</small>
+            {installUnavailable && <em>{installInstructions}</em>}
+          </div>
+          <button className="install-action" onClick={installUnavailable ? dismissInstall : requestInstall}>{installUnavailable ? "Entendi" : "Instalar"}</button>
+          <button className="install-close" onClick={dismissInstall} aria-label="Agora não">×</button>
+        </aside>
+      )}
     </div>
   );
 }

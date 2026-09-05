@@ -646,7 +646,7 @@ function Phone() {
 
 function Login({ user }) {
   const nav = useNavigate();
-  const [register, setRegister] = useState(false);
+  const [register, setRegister] = useState(() => new URLSearchParams(location.search).get("criar") === "1");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -4058,9 +4058,32 @@ function ImageUpload({ label, hint, value, onUpload, onChange, wide }) {
 export default function App() {
   const [user, setUser] = useState(firebaseEnabled ? undefined : null);
   useEffect(() => {
-    if (firebaseEnabled) return onAuthStateChanged(auth, setUser);
+    if (firebaseEnabled) {
+      let settled = false;
+      const authTimeout = window.setTimeout(() => {
+        if (!settled) setUser(null);
+      }, 2500);
+      const unsubscribe = onAuthStateChanged(
+        auth,
+        (authenticatedUser) => {
+          settled = true;
+          window.clearTimeout(authTimeout);
+          setUser(authenticatedUser);
+        },
+        () => {
+          settled = true;
+          window.clearTimeout(authTimeout);
+          setUser(null);
+        },
+      );
+      return () => {
+        window.clearTimeout(authTimeout);
+        unsubscribe();
+      };
+    }
     const email = safeStorageGet("tv-demo-user");
     setUser(email ? { uid: "demo-user", email } : null);
+    return undefined;
   }, []);
   const logout = async () => {
     if (firebaseEnabled) await signOut(auth);
@@ -4075,7 +4098,7 @@ export default function App() {
       <Route path="/doc" element={<Docs />} />
       <Route path="/lojas" element={<Marketplace />} />
       <Route path="/loja/:slug" element={<StorePage />} />
-      <Route path="/admin/login" element={user === undefined ? <main className="center">Carregando…</main> : <Login user={user} />} />
+      <Route path="/admin/login" element={<Login user={user} />} />
       <Route path="/admin" element={user === undefined ? <main className="center">Carregando…</main> : <Admin user={user} onLogout={logout} />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

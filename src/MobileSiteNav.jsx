@@ -12,7 +12,7 @@ function MobileSiteNav({ marketplace = false }) {
     { to: "/lojas", label: "Lojas", icon: "stores", active: marketplace },
     { to: "/doc", label: "Recursos", icon: "resources" },
     { to: "/admin/login", label: "Entrar", icon: "login" },
-    { to: "/admin", label: "Criar loja", icon: "create", primary: true },
+    { to: "/admin/login?criar=1", label: "Criar loja", icon: "create", primary: true },
   ];
 
   return (
