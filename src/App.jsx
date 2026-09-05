@@ -758,7 +758,7 @@ function StorePage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(12);
-  const [installPrompt, setInstallPrompt] = useState(null);
+  const [installPrompt, setInstallPrompt] = useState(() => window.__tvInstallPrompt || null);
   const [showInstall, setShowInstall] = useState(false);
   const loadMoreRef = useRef(null);
   useEffect(() => {
@@ -814,11 +814,17 @@ function StorePage() {
       setInstallPrompt(event);
       if (mobile) setShowInstall(true);
     };
+    const useCapturedPrompt = () => {
+      setInstallPrompt(window.__tvInstallPrompt || null);
+      if (mobile) setShowInstall(true);
+    };
     const installed = () => { setShowInstall(false); setInstallPrompt(null); };
     window.addEventListener("beforeinstallprompt", capturePrompt);
+    window.addEventListener("tvinstallpromptready", useCapturedPrompt);
     window.addEventListener("appinstalled", installed);
     return () => {
       window.removeEventListener("beforeinstallprompt", capturePrompt);
+      window.removeEventListener("tvinstallpromptready", useCapturedPrompt);
       window.removeEventListener("appinstalled", installed);
     };
   }, [slug]);
@@ -849,6 +855,7 @@ function StorePage() {
     if (!installPrompt) return;
     await installPrompt.prompt();
     await installPrompt.userChoice;
+    window.__tvInstallPrompt = null;
     setInstallPrompt(null);
     setShowInstall(false);
   };
@@ -1229,7 +1236,7 @@ function StorePage() {
         <a href={instagramHandle(store.instagram) ? `https://instagram.com/${instagramHandle(store.instagram)}` : undefined} target="_blank" rel="noreferrer" className={!instagramHandle(store.instagram) ? "disabled" : ""} aria-label="Abrir Instagram"><InstagramIcon /><span>Instagram</span></a>
         <button onClick={() => setCartOpen(true)} aria-label={`Abrir sacola com ${count} itens`}><span className="app-bag-wrap"><BagIcon />{count > 0 && <b>{count}</b>}</span><span>Sacola</span></button>
       </nav>
-      {showInstall && installPrompt && (
+      {showInstall && (
         <aside className="install-app-card" role="dialog" aria-label={`Instalar aplicativo ${store.brand}`}>
           {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <span className="install-fallback">{store.brand?.charAt(0)}</span>}
           <div><strong>Instale a {store.brand}</strong><small>Acesse mais rápido, como um aplicativo no seu celular.</small></div>

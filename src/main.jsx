@@ -4,6 +4,14 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './styles.css';
 
+// O navegador pode liberar o instalador antes de a loja terminar de carregar.
+// Guardamos o evento para que o botão da vitrine possa usá-lo depois.
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  window.__tvInstallPrompt = event;
+  window.dispatchEvent(new Event('tvinstallpromptready'));
+});
+
 createRoot(document.getElementById('root')).render(<BrowserRouter><App /></BrowserRouter>);
 
 if ('serviceWorker' in navigator) {
