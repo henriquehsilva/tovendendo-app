@@ -3013,18 +3013,18 @@ footer {
   .store-desktop-search { display: none; }
   .store-app-nav {
     position: fixed;
-    right: 10px;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    left: 10px;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 45;
-    min-height: 66px;
+    min-height: calc(70px + env(safe-area-inset-bottom));
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    padding: 6px;
-    border: 1px solid rgba(220, 231, 237, .9);
-    border-radius: 18px;
+    padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(220, 231, 237, .95);
+    border-radius: 0;
     background: rgba(255, 255, 255, .96);
-    box-shadow: 0 12px 38px rgba(18, 32, 45, .2);
+    box-shadow: 0 -8px 30px rgba(18, 32, 45, .13);
     backdrop-filter: blur(16px);
   }
   .store-app-nav a,
@@ -3039,7 +3039,7 @@ footer {
   .install-app-card {
     position: fixed;
     right: 14px;
-    bottom: calc(88px + env(safe-area-inset-bottom));
+    bottom: calc(84px + env(safe-area-inset-bottom));
     left: 14px;
     z-index: 50;
     display: grid;
