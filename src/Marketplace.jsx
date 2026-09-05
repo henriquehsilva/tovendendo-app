@@ -5,6 +5,7 @@ import { db, firebaseEnabled } from "./firebase";
 import { demoMarketplaceStores, demoStore } from "./data";
 import BrazilianCityPicker from "./BrazilianCityPicker";
 import { categoryIconType } from "./categoryCatalog";
+import MobileSiteNav from "./MobileSiteNav";
 
 const PAGE_SIZE = 8;
 const normalize = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -115,6 +116,11 @@ function Marketplace() {
     <div className="market-page">
       <header className="market-nav">
         <Link className="product-logo" to="/"><i>●</i> tô<span>vendendo</span></Link>
+        <label className="market-nav-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/></svg>
+          <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar no marketplace" aria-label="Buscar no marketplace" />
+          {search && <button type="button" onClick={() => setSearch("")} aria-label="Limpar busca">×</button>}
+        </label>
         <nav><Link to="/doc">Recursos</Link><Link to="/admin/login">Entrar</Link><Link className="button primary small" to="/admin">Criar minha loja</Link></nav>
       </header>
       <main>
@@ -162,6 +168,7 @@ function Marketplace() {
         <section className="market-cta"><div><p className="eyebrow">VENDA DO SEU JEITO</p><h2>Quer ver sua loja aqui?</h2><p>Crie sua vitrine, publique seus produtos e seja encontrado por novos clientes.</p></div><Link className="button light" to="/admin">Criar minha loja grátis →</Link></section>
       </main>
       <footer className="market-footer"><span>© 2026 Tô Vendendo</span><Link to="/doc">Conheça os recursos</Link><Link to="/">Página inicial</Link></footer>
+      <MobileSiteNav marketplace />
     </div>
   );
 }

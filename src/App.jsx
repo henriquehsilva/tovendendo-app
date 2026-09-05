@@ -40,6 +40,7 @@ import {
 } from "./data";
 import Docs from "./Docs";
 import Marketplace from "./Marketplace";
+import MobileSiteNav from "./MobileSiteNav";
 import BrazilianCityPicker from "./BrazilianCityPicker";
 import CategoryAutocomplete from "./CategoryAutocomplete";
 import CustomDomainSetup from "./CustomDomainSetup";
@@ -430,6 +431,7 @@ function Landing() {
         </section>
       </main>
       <footer>© 2026 Tô Vendendo · Feito para bons negócios.</footer>
+      <MobileSiteNav />
       <a
         className="landing-whatsapp"
         href="https://wa.me/5562985849729?text=Ol%C3%A1%21%20Gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20o%20T%C3%B4%20Vendendo."
