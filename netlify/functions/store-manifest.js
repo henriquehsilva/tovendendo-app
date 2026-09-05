@@ -26,7 +26,7 @@ export default async function (request) {
       short_name: String(store.brand).slice(0, 20),
       description: store.tagline || store.description || `Loja ${store.brand}`,
       start_url: `/loja/${store.slug}`,
-      scope: `/loja/${store.slug}`,
+      scope: "/",
       display: "standalone",
       display_override: ["standalone", "minimal-ui"],
       orientation: "portrait-primary",
@@ -39,7 +39,7 @@ export default async function (request) {
         { src: icon(192), sizes: "192x192", type: "image/png", purpose: "any" },
         { src: icon(512), sizes: "512x512", type: "image/png", purpose: "any maskable" },
       ],
-    }), { headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=300, s-maxage=3600" } });
+    }), { headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=300, stale-while-revalidate=3600", "access-control-allow-origin": "*" } });
   } catch (error) {
     console.error("Store manifest error:", error);
     return new Response("Não foi possível gerar o manifesto.", { status: 500 });

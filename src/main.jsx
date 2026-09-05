@@ -4,6 +4,14 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './styles.css';
 
+const storeSlug = location.pathname.match(/^\/loja\/([^/]+)/)?.[1];
+if (storeSlug) {
+  document.querySelector('link[rel="manifest"]')?.setAttribute(
+    'href',
+    `/.netlify/functions/store-manifest?slug=${encodeURIComponent(storeSlug)}`,
+  );
+}
+
 // O navegador pode liberar o instalador antes de a loja terminar de carregar.
 // Guardamos o evento para que o botão da vitrine possa usá-lo depois.
 window.addEventListener('beforeinstallprompt', (event) => {

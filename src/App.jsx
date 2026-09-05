@@ -844,7 +844,7 @@ function StorePage() {
     const previousThemeColor = themeColor?.getAttribute("content");
     const storeManifest = document.createElement("link");
     storeManifest.rel = "manifest";
-    storeManifest.href = `/loja/${store.slug}/manifest.webmanifest`;
+    storeManifest.href = `/.netlify/functions/store-manifest?slug=${encodeURIComponent(store.slug)}`;
     if (manifest) manifest.replaceWith(storeManifest);
     else document.head.appendChild(storeManifest);
     const storeIcon = firebaseEnabled && store.id
