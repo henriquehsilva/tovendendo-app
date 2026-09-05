@@ -66,20 +66,36 @@ function Marketplace() {
     }
     let active = true;
     let timeoutId;
+    const controller = new AbortController();
     const timeout = new Promise((_, reject) => {
       timeoutId = window.setTimeout(() => reject(new Error("marketplace-timeout")), MARKETPLACE_TIMEOUT);
     });
     Promise.race([
-      getDocs(query(collection(db, "stores"), where("published", "==", true))),
+      fetch("/.netlify/functions/marketplace-stores", { signal: controller.signal })
+        .then((response) => {
+          if (!response.ok) throw new Error("marketplace-request");
+          return response.json();
+        })
+        .then((result) => result.stores),
       timeout,
     ])
-      .then((snapshot) => active && setStores(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))))
-      .catch(() => active && setError("Não foi possível carregar as lojas agora. Verifique sua conexão e tente novamente."))
+      .then((loadedStores) => active && setStores(loadedStores))
+      .catch(async () => {
+        try {
+          const snapshot = await Promise.race([
+            getDocs(query(collection(db, "stores"), where("published", "==", true))),
+            new Promise((_, reject) => window.setTimeout(() => reject(new Error("firebase-timeout")), MARKETPLACE_TIMEOUT)),
+          ]);
+          if (active) setStores(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+        } catch {
+          if (active) setError("Não foi possível carregar as lojas agora. Verifique sua conexão e tente novamente.");
+        }
+      })
       .finally(() => {
         window.clearTimeout(timeoutId);
         if (active) setLoading(false);
       });
-    return () => { active = false; window.clearTimeout(timeoutId); document.title = "Tô Vendendo"; };
+    return () => { active = false; controller.abort(); window.clearTimeout(timeoutId); document.title = "Tô Vendendo"; };
   }, [loadAttempt]);
 
   useEffect(() => {
