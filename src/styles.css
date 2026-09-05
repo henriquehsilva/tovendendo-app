@@ -2969,11 +2969,10 @@ footer {
     backdrop-filter: blur(16px);
   }
   .store-app-nav a,
-  .store-app-nav button { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; border-radius: 13px; background: transparent; color: var(--ink); font-size: .66rem; font-weight: 700; cursor: pointer; }
-  .store-app-nav svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; }
-  .store-app-nav a:first-child { color: #168b53; }
-  .store-app-nav a:nth-child(2) { color: #c13584; }
-  .store-app-nav button { background: var(--pale); color: var(--blue-dark); }
+  .store-app-nav button { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; border-radius: 13px; background: transparent; color: #697781; font-size: .66rem; font-weight: 700; cursor: pointer; }
+  .store-app-nav svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.65; }
+  .store-app-nav a:active,
+  .store-app-nav button:active { background: #f1f4f5; color: #394750; }
   .store-app-nav .disabled { opacity: .35; pointer-events: none; }
   .app-bag-wrap { position: relative; line-height: 0; }
   .app-bag-wrap b { position: absolute; top: -7px; right: -11px; display: grid; min-width: 18px; height: 18px; place-items: center; padding: 0 4px; border: 2px solid white; border-radius: 10px; background: var(--blue-dark); color: white; font-size: .58rem; line-height: 1; }
