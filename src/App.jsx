@@ -1116,7 +1116,7 @@ function StorePage() {
     <div className="store-page" style={paletteStyle(store.palette)}>
       <header className="store-nav">
         <a className="brand" href="#top">
-          {store.logoUrl ? <img src={store.logoUrl} /> : <i>●</i>}
+          <img src={store.logoUrl || "/default-store-logo.png"} alt={`Logo da ${store.brand}`} />
           <span>{store.brand}</span>
         </a>
         <div>
@@ -1266,7 +1266,7 @@ function StorePage() {
       </nav>
       {showInstall && (
         <aside className="install-app-card" role="dialog" aria-label={`Instalar aplicativo ${store.brand}`}>
-          {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <span className="install-fallback">{store.brand?.charAt(0)}</span>}
+          <img src={store.logoUrl || "/default-store-logo.png"} alt="" />
           <div>
             <strong>Instale a {store.brand}</strong>
             <small>{installUnavailable ? "Siga estes passos para instalar:" : "Acesse mais rápido, como um aplicativo no seu celular."}</small>
@@ -3700,7 +3700,7 @@ function AdminPreview({ store, products }) {
         </div>
         <div className="preview-screen">
           <header>
-            {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <i>●</i>}
+            <img src={store.logoUrl || "/default-store-logo.png"} alt="" />
             <b>{store.brand || "Sua loja"}</b>
             <span>Sacola</span>
           </header>

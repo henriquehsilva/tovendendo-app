@@ -1,5 +1,5 @@
 const CACHE = 'to-vendendo-v3';
-const ASSETS = ['/', '/manifest.webmanifest', '/favicon.png', '/icon-192.png', '/icon-512.png', '/tovendendo-app-logo.png'];
+const ASSETS = ['/', '/manifest.webmanifest', '/favicon.png', '/icon-192.png', '/icon-512.png', '/tovendendo-app-logo.png', '/default-store-logo.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

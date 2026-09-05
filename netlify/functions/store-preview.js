@@ -38,7 +38,7 @@ export default async function (request) {
     const storeSchema = {
       "@context": "https://schema.org", "@type": "Store", "@id": `${publicUrl}#store`,
       name: store.brand, description, url: publicUrl, image: absoluteUrl(baseUrl, store.heroImage || socialImage),
-      logo: store.logoUrl ? absoluteUrl(baseUrl, store.logoUrl) : undefined,
+      logo: absoluteUrl(baseUrl, store.logoUrl || "/default-store-logo.png"),
       telephone: store.whatsapp ? `+${String(store.whatsapp).replace(/\D/g, "")}` : undefined,
       address: { "@type": "PostalAddress", streetAddress: store.address || undefined, addressLocality: store.city || undefined, addressRegion: store.state || undefined, addressCountry: "BR" },
       sameAs,
