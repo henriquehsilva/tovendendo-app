@@ -760,7 +760,6 @@ function StorePage() {
   const [visibleLimit, setVisibleLimit] = useState(12);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
-  const [showIosHelp, setShowIosHelp] = useState(false);
   const loadMoreRef = useRef(null);
   useEffect(() => {
     if (!firebaseEnabled) {
@@ -845,18 +844,13 @@ function StorePage() {
   }, [store]);
   const dismissInstall = () => {
     setShowInstall(false);
-    setShowIosHelp(false);
   };
   const requestInstall = async () => {
-    if (installPrompt) {
-      await installPrompt.prompt();
-      await installPrompt.userChoice;
-      setInstallPrompt(null);
-      setShowInstall(false);
-      return;
-    }
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) setShowIosHelp(true);
-    else setShowIosHelp(true);
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+    setShowInstall(false);
   };
   const visible = products;
   const purchasable = visible.filter((product) => !productUnavailable(product));
@@ -1235,11 +1229,11 @@ function StorePage() {
         <a href={instagramHandle(store.instagram) ? `https://instagram.com/${instagramHandle(store.instagram)}` : undefined} target="_blank" rel="noreferrer" className={!instagramHandle(store.instagram) ? "disabled" : ""} aria-label="Abrir Instagram"><InstagramIcon /><span>Instagram</span></a>
         <button onClick={() => setCartOpen(true)} aria-label={`Abrir sacola com ${count} itens`}><span className="app-bag-wrap"><BagIcon />{count > 0 && <b>{count}</b>}</span><span>Sacola</span></button>
       </nav>
-      {showInstall && (
+      {showInstall && installPrompt && (
         <aside className="install-app-card" role="dialog" aria-label={`Instalar aplicativo ${store.brand}`}>
           {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <span className="install-fallback">{store.brand?.charAt(0)}</span>}
-          <div><strong>Instale a {store.brand}</strong><small>Acesse mais rápido, como um aplicativo no seu celular.</small>{showIosHelp && <em>{/iPad|iPhone|iPod/.test(navigator.userAgent) ? "No Safari, toque em Compartilhar e depois em Adicionar à Tela de Início." : "Abra o menu do navegador e escolha Instalar app ou Adicionar à tela inicial."}</em>}</div>
-          <button className="install-action" onClick={showIosHelp ? dismissInstall : requestInstall}>{showIosHelp ? "Entendi" : "Instalar"}</button>
+          <div><strong>Instale a {store.brand}</strong><small>Acesse mais rápido, como um aplicativo no seu celular.</small></div>
+          <button className="install-action" onClick={requestInstall}>Instalar</button>
           <button className="install-close" onClick={dismissInstall} aria-label="Agora não">×</button>
         </aside>
       )}
