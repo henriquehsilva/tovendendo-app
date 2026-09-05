@@ -760,6 +760,7 @@ function StorePage() {
   const [visibleLimit, setVisibleLimit] = useState(12);
   const [installPrompt, setInstallPrompt] = useState(() => window.__tvInstallPrompt || null);
   const [showInstall, setShowInstall] = useState(false);
+  const [installUnavailable, setInstallUnavailable] = useState(false);
   const loadMoreRef = useRef(null);
   useEffect(() => {
     if (!firebaseEnabled) {
@@ -837,12 +838,21 @@ function StorePage() {
     const previousTitle = document.title;
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     const previousAppleTitle = appleTitle?.getAttribute("content");
-    if (manifest) manifest.setAttribute("href", `/loja/${store.slug}/manifest.webmanifest`);
+    const storeManifest = document.createElement("link");
+    storeManifest.rel = "manifest";
+    storeManifest.href = `/loja/${store.slug}/manifest.webmanifest`;
+    if (manifest) manifest.replaceWith(storeManifest);
+    else document.head.appendChild(storeManifest);
     if (appleIcon && store.logoUrl) appleIcon.setAttribute("href", store.logoUrl);
     document.title = `${store.brand} | Tô Vendendo`;
     if (appleTitle) appleTitle.setAttribute("content", store.brand);
     return () => {
-      if (manifest && previousManifest) manifest.setAttribute("href", previousManifest);
+      if (previousManifest) {
+        const restoredManifest = document.createElement("link");
+        restoredManifest.rel = "manifest";
+        restoredManifest.href = previousManifest;
+        storeManifest.replaceWith(restoredManifest);
+      } else storeManifest.remove();
       if (appleIcon && previousIcon) appleIcon.setAttribute("href", previousIcon);
       document.title = previousTitle;
       if (appleTitle && previousAppleTitle) appleTitle.setAttribute("content", previousAppleTitle);
@@ -852,9 +862,13 @@ function StorePage() {
     setShowInstall(false);
   };
   const requestInstall = async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    await installPrompt.userChoice;
+    const prompt = installPrompt || window.__tvInstallPrompt;
+    if (!prompt) {
+      setInstallUnavailable(true);
+      return;
+    }
+    await prompt.prompt();
+    await prompt.userChoice;
     window.__tvInstallPrompt = null;
     setInstallPrompt(null);
     setShowInstall(false);
@@ -1239,7 +1253,7 @@ function StorePage() {
       {showInstall && (
         <aside className="install-app-card" role="dialog" aria-label={`Instalar aplicativo ${store.brand}`}>
           {store.logoUrl ? <img src={store.logoUrl} alt="" /> : <span className="install-fallback">{store.brand?.charAt(0)}</span>}
-          <div><strong>Instale a {store.brand}</strong><small>Acesse mais rápido, como um aplicativo no seu celular.</small></div>
+          <div><strong>Instale a {store.brand}</strong><small>{installUnavailable ? "A instalação automática não está disponível neste navegador." : "Acesse mais rápido, como um aplicativo no seu celular."}</small></div>
           <button className="install-action" onClick={requestInstall}>Instalar</button>
           <button className="install-close" onClick={dismissInstall} aria-label="Agora não">×</button>
         </aside>

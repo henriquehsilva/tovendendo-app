@@ -54,7 +54,17 @@
       content="https://tovendendo.app/tovendendo-app-logo.png"
     />
     <link rel="canonical" href="https://tovendendo.app/" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      (() => {
+        const store = location.pathname.match(/^\/loja\/([^/]+)\/?$/);
+        const manifest = document.createElement("link");
+        manifest.rel = "manifest";
+        manifest.href = store
+          ? `/loja/${encodeURIComponent(store[1])}/manifest.webmanifest`
+          : "/manifest.webmanifest";
+        document.head.appendChild(manifest);
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
     <script type="application/ld+json">
