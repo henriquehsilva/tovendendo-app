@@ -135,8 +135,8 @@ function Marketplace() {
     setShowInstall(false);
   };
   const installInstructions = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    ? "No Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”."
-    : "Abra o menu do navegador (⋮) e escolha “Instalar app” ou “Adicionar à tela inicial”.";
+    ? "No Safari, toque em Compartilhar e em “Adicionar à Tela de Início”. No iPhone, esse comando instala a PWA em modo aplicativo."
+    : "A instalação PWA automática não foi liberada. Abra este endereço HTTPS no Chrome, recarregue a página e escolha “Instalar app” no menu.";
 
   useEffect(() => {
     if (!firebaseEnabled || notificationPermission !== "granted") return undefined;
