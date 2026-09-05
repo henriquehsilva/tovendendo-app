@@ -376,6 +376,27 @@ function Landing() {
           <span>▣ Disponibilidade sob controle</span>
           <span>↗ Pagamento por QR Code Pix</span>
         </section>
+        <section className="business-app-section">
+          <div className="business-app-copy">
+            <p className="eyebrow">SUA MARCA NA TELA DO CLIENTE</p>
+            <h2>Por que ter um aplicativo para seu negócio?</h2>
+            <p>
+              Transforme sua loja em uma experiência prática e presente no dia a dia
+              dos seus clientes, com acesso rápido pelo celular e a identidade da sua marca.
+            </p>
+            <div className="business-app-points">
+              <span><b>01</b> Mais facilidade para comprar</span>
+              <span><b>02</b> Sua marca sempre por perto</span>
+              <span><b>03</b> Experiência profissional no celular</span>
+            </div>
+          </div>
+          <div className="business-app-video">
+            <video controls playsInline preload="metadata" aria-label="Por que usar um aplicativo no seu negócio">
+              <source src="/porque-usar.mp4" type="video/mp4" />
+              Seu navegador não suporta a reprodução deste vídeo.
+            </video>
+          </div>
+        </section>
         <section className="how">
           <p className="eyebrow">SIMPLES DE VERDADE</p>
           <h2>Do produto ao pagamento.</h2>
@@ -788,12 +809,11 @@ function StorePage() {
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
     const mobile = window.matchMedia("(max-width: 780px)").matches;
-    const dismissed = safeStorageGet(`tv-install-dismissed-${slug}`);
-    if (!standalone && mobile && !dismissed) setShowInstall(true);
+    if (!standalone && mobile) setShowInstall(true);
     const capturePrompt = (event) => {
       event.preventDefault();
       setInstallPrompt(event);
-      if (mobile && !dismissed) setShowInstall(true);
+      if (mobile) setShowInstall(true);
     };
     const installed = () => { setShowInstall(false); setInstallPrompt(null); };
     window.addEventListener("beforeinstallprompt", capturePrompt);
@@ -824,7 +844,6 @@ function StorePage() {
     };
   }, [store]);
   const dismissInstall = () => {
-    safeStorageSet(`tv-install-dismissed-${slug}`, "1");
     setShowInstall(false);
     setShowIosHelp(false);
   };
