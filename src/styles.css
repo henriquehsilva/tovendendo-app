@@ -576,40 +576,9 @@ footer {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.market-confidence {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  max-width: 1180px;
-  margin: 0 auto;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: white;
-}
-.market-confidence > div {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 24px;
-  border-right: 1px solid var(--line);
-}
-.market-confidence > div:last-child { border: 0; }
-.market-confidence i {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--pale);
-  color: var(--blue-dark);
-  font-style: normal;
-  font-weight: 900;
-}
-.market-confidence span { display: grid; gap: 2px; }
-.market-confidence small { color: var(--muted); font-size: .7rem; }
 .market-notifications {
   max-width: 1180px;
-  margin: 14px auto 0;
+  margin: 0 auto;
   padding: 16px 20px;
   display: flex;
   align-items: center;
@@ -636,13 +605,14 @@ footer {
 .notification-denied { color: #8a6670; font-size: .72rem; }
 .market-directory { padding-top: 55px; }
 .market-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
 }
 .market-card {
-  display: grid;
-  grid-template-columns: 156px minmax(0, 1fr);
-  min-height: 190px;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
   border-radius: 12px;
   box-shadow: none;
 }
@@ -653,8 +623,10 @@ footer {
 }
 .market-card-image {
   position: relative;
-  height: 100%;
-  min-height: 190px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1 / .78;
   padding: 12px;
   background-position: center;
   background-size: cover;
@@ -667,7 +639,8 @@ footer {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 20px;
+  flex: 1;
+  padding: 16px;
 }
 .market-card-title h3 {
   overflow: hidden;
@@ -718,9 +691,8 @@ footer {
 
 @media (max-width: 900px) {
   .market-category-list { grid-template-columns: repeat(4, 1fr); row-gap: 25px; }
-  .market-confidence { margin-inline: 30px; }
   .market-search { grid-template-columns: minmax(0, 1fr) 330px auto; }
-  .market-grid { grid-template-columns: 1fr; }
+  .market-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   .market-hero { padding-top: 48px; text-align: center; }
@@ -737,16 +709,16 @@ footer {
   .market-category-list { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; }
   .market-category-list button { flex: 0 0 82px; }
   .market-category-list i { width: 68px; height: 68px; }
-  .market-confidence { grid-template-columns: 1fr; margin-inline: 16px; }
-  .market-confidence > div { border-right: 0; border-bottom: 1px solid var(--line); }
   .market-notifications { margin-inline: 16px; align-items: stretch; flex-direction: column; }
   .market-notifications .button { width: 100%; }
-  .market-card { grid-template-columns: 112px minmax(0, 1fr); min-height: 168px; }
-  .market-card-image { min-height: 168px; padding: 8px; }
+  .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .market-card-image { aspect-ratio: 1 / .9; padding: 8px; }
   .market-card-image span { font-size: .55rem; }
-  .market-card-copy { padding: 14px; }
-  .market-card-title h3 { font-size: 1.05rem; }
+  .market-card-copy { padding: 12px 10px; }
+  .market-card-title h3 { font-size: .92rem; }
   .market-card-copy > p { margin-bottom: 8px; font-size: .75rem; }
+  .market-tags { gap: 4px; }
+  .market-tags b { padding: 4px 6px; font-size: .55rem; }
   .market-card-meta { margin-top: 8px; }
   .market-card-meta span:last-child { display: none; }
   .market-card-action { font-size: .72rem; }

@@ -7,7 +7,8 @@ import BrazilianCityPicker from "./BrazilianCityPicker";
 import { categoryIconType } from "./categoryCatalog";
 import MobileSiteNav from "./MobileSiteNav";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 12;
+const MARKETPLACE_TIMEOUT = 12000;
 const normalize = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const categoryNames = (store) => (store.categories || []).map((item) => item.name).filter(Boolean);
 function CategoryIcon({ name }) {
@@ -57,9 +58,15 @@ function Marketplace() {
       setLoading(false);
       return () => { document.title = "Tô Vendendo"; };
     }
-    getDocs(query(collection(db, "stores"), where("published", "==", true)))
+    const timeout = new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error("marketplace-timeout")), MARKETPLACE_TIMEOUT);
+    });
+    Promise.race([
+      getDocs(query(collection(db, "stores"), where("published", "==", true))),
+      timeout,
+    ])
       .then((snapshot) => setStores(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))))
-      .catch(() => setError("Não foi possível carregar as lojas agora. Tente novamente em instantes."))
+      .catch(() => setError("Não foi possível carregar as lojas agora. Verifique sua conexão e tente novamente."))
       .finally(() => setLoading(false));
     return () => { document.title = "Tô Vendendo"; };
   }, []);
@@ -142,7 +149,6 @@ function Marketplace() {
           </div>
         </section>
 
-        <section className="market-confidence"><div><i>✓</i><span><b>Lojas reais</b><small>Negócios independentes em um só lugar</small></span></div><div><i>⌖</i><span><b>Compre perto</b><small>Encontre quem vende na sua região</small></span></div><div><i>↗</i><span><b>Contato direto</b><small>Fale com a loja sem intermediários</small></span></div></section>
         <section className="market-notifications" aria-live="polite"><div><i>♢</i><span><b>Novidades perto de você</b><small>Receba um aviso quando uma nova loja for publicada.</small></span></div>{notificationPermission === "granted" ? <strong>Notificações ativadas ✓</strong> : notificationPermission === "denied" ? <span className="notification-denied">Notificações bloqueadas no navegador</span> : notificationPermission === "unsupported" ? <span className="notification-denied">Indisponível neste navegador</span> : <button className="button primary small" onClick={enableNotifications}>Ativar notificações</button>}</section>
 
         <section className="market-directory">
