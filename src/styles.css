@@ -2971,6 +2971,7 @@ footer {
   .store-app-nav a,
   .store-app-nav button { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; border-radius: 13px; background: transparent; color: #697781; font-size: .66rem; font-weight: 700; cursor: pointer; }
   .store-app-nav svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.65; }
+  .store-app-nav a svg { fill: currentColor; stroke: none; }
   .store-app-nav a:active,
   .store-app-nav button:active { background: #f1f4f5; color: #394750; }
   .store-app-nav .disabled { opacity: .35; pointer-events: none; }
