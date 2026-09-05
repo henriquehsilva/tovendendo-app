@@ -4069,15 +4069,14 @@ export default function App() {
       setUser(null);
     }
   };
-  if (user === undefined) return <main className="center">Carregando…</main>;
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/doc" element={<Docs />} />
       <Route path="/lojas" element={<Marketplace />} />
       <Route path="/loja/:slug" element={<StorePage />} />
-      <Route path="/admin/login" element={<Login user={user} />} />
-      <Route path="/admin" element={<Admin user={user} onLogout={logout} />} />
+      <Route path="/admin/login" element={user === undefined ? <main className="center">Carregando…</main> : <Login user={user} />} />
+      <Route path="/admin" element={user === undefined ? <main className="center">Carregando…</main> : <Admin user={user} onLogout={logout} />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
