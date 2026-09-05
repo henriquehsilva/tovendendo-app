@@ -5,7 +5,9 @@ import App from './App.jsx';
 import './styles.css';
 
 const storeSlug = location.pathname.match(/^\/loja\/([^/]+)/)?.[1];
-if (storeSlug) {
+if (location.pathname === '/lojas') {
+  document.querySelector('link[rel="manifest"]')?.setAttribute('href', '/marketplace.webmanifest');
+} else if (storeSlug) {
   document.querySelector('link[rel="manifest"]')?.setAttribute(
     'href',
     `/.netlify/functions/store-manifest?slug=${encodeURIComponent(storeSlug)}`,
@@ -19,6 +21,21 @@ window.addEventListener('beforeinstallprompt', (event) => {
   window.__tvInstallPrompt = event;
   window.dispatchEvent(new Event('tvinstallpromptready'));
 });
+
+window.__tvWaitForInstallPrompt = () => {
+  if (window.__tvInstallPrompt) return Promise.resolve(window.__tvInstallPrompt);
+  return new Promise((resolve) => {
+    const ready = () => {
+      window.clearTimeout(timeout);
+      resolve(window.__tvInstallPrompt || null);
+    };
+    const timeout = window.setTimeout(() => {
+      window.removeEventListener('tvinstallpromptready', ready);
+      resolve(null);
+    }, 3000);
+    window.addEventListener('tvinstallpromptready', ready, { once: true });
+  });
+};
 
 createRoot(document.getElementById('root')).render(<BrowserRouter><App /></BrowserRouter>);
 

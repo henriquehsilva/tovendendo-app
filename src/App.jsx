@@ -875,7 +875,7 @@ function StorePage() {
     setShowInstall(false);
   };
   const requestInstall = async () => {
-    const prompt = installPrompt || window.__tvInstallPrompt;
+    const prompt = installPrompt || window.__tvInstallPrompt || await window.__tvWaitForInstallPrompt?.();
     if (!prompt) {
       setInstallUnavailable(true);
       return;

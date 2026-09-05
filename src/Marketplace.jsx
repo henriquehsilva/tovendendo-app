@@ -118,24 +118,15 @@ function Marketplace() {
   useEffect(() => {
     const manifest = document.querySelector('link[rel="manifest"]');
     const previousManifest = manifest?.getAttribute("href");
-    const marketplaceManifest = document.createElement("link");
-    marketplaceManifest.rel = "manifest";
-    marketplaceManifest.href = "/marketplace.webmanifest";
-    if (manifest) manifest.replaceWith(marketplaceManifest);
-    else document.head.appendChild(marketplaceManifest);
+    manifest?.setAttribute("href", "/marketplace.webmanifest");
     return () => {
-      if (previousManifest) {
-        const restoredManifest = document.createElement("link");
-        restoredManifest.rel = "manifest";
-        restoredManifest.href = previousManifest;
-        marketplaceManifest.replaceWith(restoredManifest);
-      } else marketplaceManifest.remove();
+      if (previousManifest) manifest?.setAttribute("href", previousManifest);
     };
   }, []);
 
   const dismissInstall = () => setShowInstall(false);
   const requestInstall = async () => {
-    const prompt = installPrompt || window.__tvInstallPrompt;
+    const prompt = installPrompt || window.__tvInstallPrompt || await window.__tvWaitForInstallPrompt?.();
     if (!prompt) { setInstallUnavailable(true); return; }
     await prompt.prompt();
     await prompt.userChoice;
