@@ -838,14 +838,23 @@ function StorePage() {
     const previousTitle = document.title;
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     const previousAppleTitle = appleTitle?.getAttribute("content");
+    const applicationName = document.querySelector('meta[name="application-name"]');
+    const previousApplicationName = applicationName?.getAttribute("content");
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    const previousThemeColor = themeColor?.getAttribute("content");
     const storeManifest = document.createElement("link");
     storeManifest.rel = "manifest";
     storeManifest.href = `/loja/${store.slug}/manifest.webmanifest`;
     if (manifest) manifest.replaceWith(storeManifest);
     else document.head.appendChild(storeManifest);
-    if (appleIcon && store.logoUrl) appleIcon.setAttribute("href", store.logoUrl);
+    const storeIcon = firebaseEnabled && store.id
+      ? `/.netlify/functions/store-icon?storeId=${encodeURIComponent(store.id)}&size=192`
+      : store.logoUrl;
+    if (appleIcon && storeIcon) appleIcon.setAttribute("href", storeIcon);
     document.title = `${store.brand} | Tô Vendendo`;
     if (appleTitle) appleTitle.setAttribute("content", store.brand);
+    if (applicationName) applicationName.setAttribute("content", store.brand);
+    if (themeColor) themeColor.setAttribute("content", paletteStyle(store.palette)["--blue-dark"]);
     return () => {
       if (previousManifest) {
         const restoredManifest = document.createElement("link");
@@ -856,6 +865,8 @@ function StorePage() {
       if (appleIcon && previousIcon) appleIcon.setAttribute("href", previousIcon);
       document.title = previousTitle;
       if (appleTitle && previousAppleTitle) appleTitle.setAttribute("content", previousAppleTitle);
+      if (applicationName && previousApplicationName) applicationName.setAttribute("content", previousApplicationName);
+      if (themeColor && previousThemeColor) themeColor.setAttribute("content", previousThemeColor);
     };
   }, [store]);
   const dismissInstall = () => {

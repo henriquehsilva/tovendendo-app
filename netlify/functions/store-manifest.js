@@ -1,6 +1,13 @@
 import { firebaseAdmin } from "./_firebase.js";
 
 const cleanSlug = (value) => String(value || "").slice(0, 120).replace(/[^a-zA-Z0-9-]/g, "");
+const themeColors = {
+  sky: "#247da9",
+  rose: "#b73f68",
+  terracotta: "#a84f32",
+  violet: "#6d4bcc",
+  graphite: "#465b66",
+};
 
 export default async function (request) {
   try {
@@ -21,9 +28,13 @@ export default async function (request) {
       start_url: `/loja/${store.slug}`,
       scope: `/loja/${store.slug}`,
       display: "standalone",
+      display_override: ["standalone", "minimal-ui"],
+      orientation: "portrait-primary",
       background_color: "#ffffff",
-      theme_color: "#247da9",
+      theme_color: themeColors[store.palette] || themeColors.sky,
       lang: "pt-BR",
+      categories: ["shopping", "business"],
+      prefer_related_applications: false,
       icons: [
         { src: icon(192), sizes: "192x192", type: "image/png", purpose: "any" },
         { src: icon(512), sizes: "512x512", type: "image/png", purpose: "any maskable" },
