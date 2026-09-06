@@ -822,6 +822,22 @@ footer {
   border-bottom: 1px solid var(--line);
   color: var(--blue-dark);
 }
+.store-alerts-heading > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.store-alerts-show-all {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue-dark);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 .store-alerts-heading button {
   width: 27px;
   height: 27px;
@@ -838,11 +854,21 @@ footer {
   overflow-y: auto;
 }
 .store-alert-item {
+  width: 100%;
   display: flex;
   gap: 10px;
   padding: 14px 17px;
   border-bottom: 1px solid #edf2f4;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
+.store-alert-item:hover { background: #f8fbfc; }
 .store-alert-item:last-child { border-bottom: 0; }
 .store-alert-dot {
   flex: 0 0 auto;

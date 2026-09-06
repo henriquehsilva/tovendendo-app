@@ -86,6 +86,11 @@ const orderDate = (value) => {
       }).format(date)
     : "Agora";
 };
+const isToday = (value) => {
+  const date = new Date(value);
+  const today = new Date();
+  return date.toDateString() === today.toDateString();
+};
 const normalizeCustomer = (customer) => ({
   name: String(customer.name || "")
     .trim()
@@ -765,6 +770,7 @@ function StorePage() {
   const [search, setSearch] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(12);
   const [installPrompt, setInstallPrompt] = useState(() => window.__tvInstallPrompt || null);
@@ -855,6 +861,7 @@ function StorePage() {
             message: added.length === 1
               ? `${added[0].name} foi adicionado ao catálogo.`
               : `${added.length} novos itens foram adicionados ao catálogo.`,
+            productId: added.length === 1 ? added[0].id : undefined,
             time: Date.now(),
             read: false,
           },
@@ -869,6 +876,7 @@ function StorePage() {
             message: priceChanges.length === 1
               ? `O preço de ${priceChanges[0].name} foi alterado.`
               : `${priceChanges.length} preços de produtos foram alterados.`,
+            productId: priceChanges.length === 1 ? priceChanges[0].id : undefined,
             time: Date.now(),
             read: false,
           },
@@ -1206,6 +1214,32 @@ function StorePage() {
       setPaying(false);
     }
   };
+  const removeNotification = (notificationId) => {
+    setNotifications((current) => {
+      const next = current.filter((item) => item.id !== notificationId);
+      const saved = readStoredJson(notificationKey);
+      if (saved) safeStorageSet(notificationKey, JSON.stringify({ ...saved, notifications: next }));
+      return next;
+    });
+  };
+  const openNotification = (notification) => {
+    removeNotification(notification.id);
+    setNotificationsOpen(false);
+    if (!notification.productId) return;
+    setSearch("");
+    setActiveCategory("all");
+    const productIndex = visible.findIndex((product) => product.id === notification.productId);
+    if (productIndex >= 0) setVisibleLimit((current) => Math.max(current, productIndex + 1));
+    window.setTimeout(() => {
+      document.getElementById(`produto-${notification.productId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 80);
+  };
+  const visibleNotifications = showAllNotifications
+    ? notifications
+    : notifications.filter((item) => isToday(item.time));
   if (loading) return <main className="center">Carregando loja…</main>;
   if (!store?.published)
     return (
@@ -1248,23 +1282,28 @@ function StorePage() {
         {notificationsOpen && (
           <aside className="store-alerts-popover" aria-label="Alertas da loja">
             <div className="store-alerts-heading">
-              <b>Alertas da loja</b>
+              <div>
+                <b>Alertas de hoje</b>
+                {!showAllNotifications && notifications.some((item) => !isToday(item.time)) && (
+                  <button type="button" className="store-alerts-show-all" onClick={() => setShowAllNotifications(true)}>Mostrar tudo</button>
+                )}
+              </div>
               <button type="button" onClick={() => setNotificationsOpen(false)} aria-label="Fechar alertas">×</button>
             </div>
-            {notifications.length ? (
+            {visibleNotifications.length ? (
               <div className="store-alerts-list">
-                {notifications.map((item) => (
-                  <article className="store-alert-item" key={item.id}>
+                {visibleNotifications.map((item) => (
+                  <button className="store-alert-item" key={item.id} onClick={() => openNotification(item)}>
                     <span className="store-alert-dot" />
                     <div>
                       <b>{item.title}</b>
                       <p>{item.message}</p>
                     </div>
-                  </article>
+                  </button>
                 ))}
               </div>
             ) : (
-              <p className="store-alerts-empty">Nenhum alerta novo por enquanto.</p>
+              <p className="store-alerts-empty">Nenhum alerta para mostrar.</p>
             )}
           </aside>
         )}
