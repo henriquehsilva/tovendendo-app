@@ -3303,7 +3303,10 @@ footer {
     padding: 35px 18px 110px;
   }
   .editor-form h1 {
-    font-size: 2.3rem;
+    margin: 6px 0 25px;
+    font-size: 1.9rem;
+    line-height: 1.08;
+    letter-spacing: -0.05em;
   }
   .form-grid {
     grid-template-columns: 1fr;
