@@ -760,6 +760,7 @@ function StorePage() {
   const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(12);
   const [installPrompt, setInstallPrompt] = useState(() => window.__tvInstallPrompt || null);
   const [showInstall, setShowInstall] = useState(false);
@@ -939,6 +940,14 @@ function StorePage() {
   }, [visible, allCategories, activeCategory, search]);
   const displayed = filtered.slice(0, visibleLimit);
   useEffect(() => setVisibleLimit(12), [search, activeCategory]);
+  useEffect(() => {
+    if (!mobileCategoriesOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setMobileCategoriesOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [mobileCategoriesOpen]);
   useEffect(() => {
     setCart((current) =>
       Object.fromEntries(
@@ -1143,6 +1152,83 @@ function StorePage() {
           <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar produtos" aria-label="Buscar produtos" />
           {search && <button onClick={() => setSearch("")} aria-label="Limpar busca">×</button>}
         </label>
+        {categories.length > 0 && (
+          <>
+            <button
+              type="button"
+              className="mobile-category-trigger"
+              onClick={() => setMobileCategoriesOpen(true)}
+              aria-label="Abrir categorias"
+              aria-expanded={mobileCategoriesOpen}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+                <circle cx="8" cy="6" r="1.5" />
+                <circle cx="16" cy="12" r="1.5" />
+                <circle cx="10" cy="18" r="1.5" />
+              </svg>
+              <span>Categorias</span>
+            </button>
+            {mobileCategoriesOpen && (
+              <button
+                type="button"
+                className="mobile-category-backdrop"
+                onClick={() => setMobileCategoriesOpen(false)}
+                aria-label="Fechar categorias"
+              />
+            )}
+            <aside
+              className={`mobile-category-drawer ${mobileCategoriesOpen ? "is-open" : ""}`}
+              aria-hidden={!mobileCategoriesOpen}
+            >
+              <div className="mobile-category-drawer-bar">
+                <span className="mobile-category-grabber" />
+                <b>Categorias</b>
+                <button
+                  type="button"
+                  className="mobile-category-close"
+                  onClick={() => setMobileCategoriesOpen(false)}
+                  aria-label="Fechar categorias"
+                >
+                  <span />
+                  <span />
+                </button>
+              </div>
+              <div className="mobile-category-list">
+                <button
+                  type="button"
+                  className={activeCategory === "all" ? "active" : ""}
+                  onClick={() => {
+                    setActiveCategory("all");
+                    setMobileCategoriesOpen(false);
+                  }}
+                >
+                  Todas as categorias
+                  <span>{visible.length}</span>
+                </button>
+                {categories.map((category) => {
+                  const categoryCount = visible.filter(
+                    (product) => productCategoryId(product, allCategories) === category.id,
+                  ).length;
+                  return (
+                    <button
+                      type="button"
+                      key={category.id}
+                      className={activeCategory === category.id ? "active" : ""}
+                      onClick={() => {
+                        setActiveCategory(category.id);
+                        setMobileCategoriesOpen(false);
+                      }}
+                    >
+                      {category.name}
+                      <span>{categoryCount}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+          </>
+        )}
       </header>
       <main id="top">
         <section
