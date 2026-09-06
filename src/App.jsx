@@ -1123,7 +1123,10 @@ function StorePage() {
       </main>
     );
   return (
-    <div className="store-page" style={paletteStyle(store.palette)}>
+      <div
+        className={`store-page ${search.trim() ? "is-searching" : ""}`}
+        style={paletteStyle(store.palette)}
+      >
       <header className="store-nav">
         <a className="brand" href="#top">
           <img src={store.logoUrl || "/default-store-logo.png"} alt={`Logo da ${store.brand}`} />
@@ -1143,7 +1146,7 @@ function StorePage() {
       </header>
       <main id="top">
         <section
-          className="store-hero"
+          className={`store-hero ${search.trim() ? "is-searching" : ""}`}
           style={{
             backgroundImage: `linear-gradient(90deg,rgba(10,25,38,.76),rgba(10,25,38,.12)),url(${store.heroImage})`,
           }}

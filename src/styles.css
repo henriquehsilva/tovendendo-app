@@ -2929,6 +2929,12 @@ footer {
   cursor: pointer;
 }
 @media (max-width: 780px) {
+  .store-page.is-searching .store-hero {
+    display: none;
+  }
+  .store-page.is-searching .products.section {
+    padding-top: 30px;
+  }
   .landing-page,
   .market-page { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   .landing-page { padding-top: 64px; }
