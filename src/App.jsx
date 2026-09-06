@@ -2196,6 +2196,7 @@ function Admin({ user, onLogout }) {
   );
   const [generatingReport, setGeneratingReport] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [tab, setTab] = useState("store");
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
@@ -2268,6 +2269,14 @@ function Admin({ user, onLogout }) {
         setSaved(`Não foi possível carregar as vendas: ${error.message}`),
     );
   }, [store?.id, user]);
+  useEffect(() => {
+    if (!mobilePreviewOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setMobilePreviewOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [mobilePreviewOpen]);
   useEffect(() => {
     const stripeReturn = new URLSearchParams(location.search).get("stripe");
     const hasStripeAccount = Boolean(
@@ -3690,6 +3699,46 @@ function Admin({ user, onLogout }) {
           <AdminPreview store={store} products={products} />
         </aside>
       </div>
+      <button
+        type="button"
+        className="mobile-preview-trigger"
+        onClick={() => setMobilePreviewOpen(true)}
+        aria-label="Abrir preview da loja"
+        aria-expanded={mobilePreviewOpen}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+          <circle cx="12" cy="12" r="2.8" />
+        </svg>
+        <span>Preview</span>
+      </button>
+      {mobilePreviewOpen && (
+        <button
+          type="button"
+          className="mobile-preview-backdrop"
+          onClick={() => setMobilePreviewOpen(false)}
+          aria-label="Fechar preview"
+        />
+      )}
+      <aside
+        className={`mobile-preview-drawer ${mobilePreviewOpen ? "is-open" : ""}`}
+        aria-hidden={!mobilePreviewOpen}
+      >
+        <div className="mobile-preview-drawer-bar">
+          <span className="mobile-preview-grabber" />
+          <b>Preview da loja</b>
+          <button
+            type="button"
+            className="mobile-preview-close"
+            onClick={() => setMobilePreviewOpen(false)}
+            aria-label="Fechar preview"
+          >
+            <span />
+            <span />
+          </button>
+        </div>
+        <AdminPreview store={store} products={products} />
+      </aside>
     </div>
   );
 }
