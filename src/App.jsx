@@ -1133,7 +1133,7 @@ function StorePage() {
     );
   return (
       <div
-        className={`store-page ${search.trim() ? "is-searching" : ""}`}
+        className={`store-page ${search.trim() || activeCategory !== "all" ? "is-catalog-filtered" : ""}`}
         style={paletteStyle(store.palette)}
       >
       <header className="store-nav">

@@ -2929,10 +2929,10 @@ footer {
   cursor: pointer;
 }
 @media (max-width: 780px) {
-  .store-page.is-searching .store-hero {
+  .store-page.is-catalog-filtered .store-hero {
     display: none;
   }
-  .store-page.is-searching .products.section {
+  .store-page.is-catalog-filtered .products.section {
     padding-top: 30px;
   }
   .landing-page,
@@ -3988,18 +3988,20 @@ footer {
   .mobile-category-close span:last-child { transform: rotate(-45deg); }
   .mobile-category-list {
     display: grid;
-    gap: 8px;
-    padding: 22px 18px 40px;
+    gap: 0;
+    padding: 12px 0 40px;
+    background: #fff;
   }
   .mobile-category-list button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 52px;
-    padding: 12px 14px;
-    border: 1px solid var(--line);
-    border-radius: 11px;
-    background: #fff;
+    min-height: 50px;
+    padding: 12px 22px;
+    border: 0;
+    border-bottom: 1px solid #e7eef1;
+    border-radius: 0;
+    background: transparent;
     color: var(--ink);
     font: inherit;
     font-size: 0.88rem;
@@ -4007,23 +4009,17 @@ footer {
     text-align: left;
   }
   .mobile-category-list button span {
-    display: grid;
-    min-width: 24px;
-    height: 24px;
-    place-items: center;
-    border-radius: 999px;
-    background: var(--pale);
-    color: var(--blue-dark);
-    font-size: 0.7rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
   }
   .mobile-category-list button.active {
-    border-color: var(--blue-dark);
-    background: var(--blue-dark);
-    color: #fff;
+    box-shadow: inset 3px 0 var(--blue);
+    background: #f3f9fc;
+    color: var(--blue-dark);
   }
   .mobile-category-list button.active span {
-    background: rgba(255, 255, 255, 0.18);
-    color: #fff;
+    color: var(--blue-dark);
   }
 }
 .token-connection {
