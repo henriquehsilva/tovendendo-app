@@ -73,6 +73,9 @@ const InstagramIcon = () => (
 const SearchIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m16 16 5 5" /></svg>
 );
+const BellIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" /></svg>
+);
 
 const orderDate = (value) => {
   const date = value?.toDate?.() || (value ? new Date(value) : null);
@@ -760,12 +763,15 @@ function StorePage() {
   const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(12);
   const [installPrompt, setInstallPrompt] = useState(() => window.__tvInstallPrompt || null);
   const [showInstall, setShowInstall] = useState(false);
   const [installUnavailable, setInstallUnavailable] = useState(false);
   const loadMoreRef = useRef(null);
+  const notificationKey = `tv-store-alerts-${slug}`;
   useEffect(() => {
     if (!firebaseEnabled) {
       const saved = localStore();
@@ -810,6 +816,83 @@ function StorePage() {
     });
     return () => unsub();
   }, [slug]);
+  useEffect(() => {
+    if (loading || !store) return;
+    const snapshot = {
+      products: products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        price: Number(product.price) || 0,
+      })),
+      store: [
+        "brand",
+        "tagline",
+        "description",
+        "heroImage",
+        "logoUrl",
+        "address",
+        "hours",
+        "whatsapp",
+        "instagram",
+        "palette",
+      ].reduce((result, field) => ({ ...result, [field]: store[field] || "" }), {}),
+    };
+    const previous = readStoredJson(notificationKey);
+    let nextNotifications = previous?.notifications || [];
+    if (previous?.snapshot) {
+      const oldProducts = previous.snapshot.products || [];
+      const oldById = new Map(oldProducts.map((product) => [product.id, product]));
+      const added = snapshot.products.filter((product) => !oldById.has(product.id));
+      const priceChanges = snapshot.products.filter((product) => {
+        const old = oldById.get(product.id);
+        return old && old.price !== product.price;
+      });
+      if (added.length) {
+        nextNotifications = [
+          {
+            id: `new-${Date.now()}`,
+            title: added.length === 1 ? "Novidade na loja" : "Novos itens na loja",
+            message: added.length === 1
+              ? `${added[0].name} foi adicionado ao catálogo.`
+              : `${added.length} novos itens foram adicionados ao catálogo.`,
+            time: Date.now(),
+            read: false,
+          },
+          ...nextNotifications,
+        ];
+      }
+      if (priceChanges.length) {
+        nextNotifications = [
+          {
+            id: `price-${Date.now()}`,
+            title: "Preços atualizados",
+            message: priceChanges.length === 1
+              ? `O preço de ${priceChanges[0].name} foi alterado.`
+              : `${priceChanges.length} preços de produtos foram alterados.`,
+            time: Date.now(),
+            read: false,
+          },
+          ...nextNotifications,
+        ];
+      }
+      const importantFields = ["brand", "tagline", "description", "heroImage", "logoUrl", "address", "hours", "whatsapp", "instagram", "palette"];
+      if (importantFields.some((field) => previous.snapshot.store?.[field] !== snapshot.store[field])) {
+        nextNotifications = [
+          {
+            id: `store-${Date.now()}`,
+            title: "A loja foi atualizada",
+            message: "O administrador fez alterações importantes na loja.",
+            time: Date.now(),
+            read: false,
+          },
+          ...nextNotifications,
+        ];
+      }
+    }
+    nextNotifications = nextNotifications.slice(0, 20);
+    setNotifications(nextNotifications);
+    safeStorageSet(notificationKey, JSON.stringify({ snapshot, notifications: nextNotifications }));
+  }, [loading, store, products, notificationKey]);
   useEffect(() => {
     const standalone = isInstalledApp();
     const mobile = window.matchMedia("(max-width: 780px)").matches;
@@ -1143,10 +1226,48 @@ function StorePage() {
         </a>
         <div>
           <span>{store.hours}</span>
+          <button
+            type="button"
+            className={`store-alert-button ${notifications.some((item) => !item.read) ? "has-alerts" : ""}`}
+            onClick={() => {
+              setNotificationsOpen((open) => !open);
+              setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+              const saved = readStoredJson(notificationKey);
+              if (saved) safeStorageSet(notificationKey, JSON.stringify({ ...saved, notifications: (saved.notifications || []).map((item) => ({ ...item, read: true })) }));
+            }}
+            aria-label="Abrir alertas da loja"
+            aria-expanded={notificationsOpen}
+          >
+            <BellIcon />
+            {notifications.some((item) => !item.read) && <i />}
+          </button>
           <button className="cart-button" onClick={() => setCartOpen(true)}>
             <BagIcon /><span>Sacola</span><b>{count}</b>
           </button>
         </div>
+        {notificationsOpen && (
+          <aside className="store-alerts-popover" aria-label="Alertas da loja">
+            <div className="store-alerts-heading">
+              <b>Alertas da loja</b>
+              <button type="button" onClick={() => setNotificationsOpen(false)} aria-label="Fechar alertas">×</button>
+            </div>
+            {notifications.length ? (
+              <div className="store-alerts-list">
+                {notifications.map((item) => (
+                  <article className="store-alert-item" key={item.id}>
+                    <span className="store-alert-dot" />
+                    <div>
+                      <b>{item.title}</b>
+                      <p>{item.message}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="store-alerts-empty">Nenhum alerta novo por enquanto.</p>
+            )}
+          </aside>
+        )}
         <label className="store-mobile-search">
           <SearchIcon />
           <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar produtos" aria-label="Buscar produtos" />
