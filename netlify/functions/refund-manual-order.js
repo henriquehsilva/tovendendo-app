@@ -22,6 +22,6 @@ export default async function (request) {
     return json(200, { refunded: true, status });
   } catch (error) {
     console.error(error);
-    return json(400, { error: error.message || "Não foi possível estornar o pedido." });
+    return json(400, { error: "Não foi possível estornar o pedido." });
   }
 }

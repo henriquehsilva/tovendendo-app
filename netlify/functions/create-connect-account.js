@@ -92,7 +92,7 @@ export default async function (request) {
           "A Stripe está em modo produção, mas ainda não aprovou o perfil Connect da plataforma. Para testar agora, configure STRIPE_SECRET_KEY com uma chave sk_test_... da mesma conta Stripe.",
       });
     return json(500, {
-      error: error.message || "Não foi possível abrir o cadastro Stripe.",
+      error: "Não foi possível abrir o cadastro de pagamentos.",
     });
   }
 }

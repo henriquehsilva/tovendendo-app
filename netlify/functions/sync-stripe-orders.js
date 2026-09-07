@@ -80,9 +80,7 @@ export default async function (request) {
           changes.paymentIntentId = intentData.id;
           changes.failureCode =
             intentData.last_payment_error.code || "card_declined";
-          changes.failureMessage =
-            intentData.last_payment_error.message ||
-            "O cartão não foi aprovado pela Stripe.";
+          changes.failureMessage = "O cartão não foi aprovado. Tente outro meio de pagamento.";
         } else {
           changes.status = "pending";
         }
@@ -101,7 +99,7 @@ export default async function (request) {
   } catch (error) {
     console.error(error);
     return json(400, {
-      error: error.message || "Não foi possível sincronizar a Stripe.",
+      error: "Não foi possível sincronizar a Stripe.",
     });
   }
 }

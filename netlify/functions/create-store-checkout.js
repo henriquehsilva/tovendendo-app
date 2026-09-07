@@ -114,7 +114,7 @@ export default async function (request) {
     }
     console.error(error);
     return json(400, {
-      error: error.message || "Não foi possível abrir o pagamento.",
+      error: "Não foi possível abrir o pagamento.",
     });
   }
 }

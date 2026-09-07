@@ -32,7 +32,7 @@ export default async function (request) {
   } catch (error) {
     console.error(error);
     return json(400, {
-      error: error.message || "Não foi possível confirmar o Pix.",
+      error: "Não foi possível confirmar o Pix.",
     });
   }
 }

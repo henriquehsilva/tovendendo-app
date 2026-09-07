@@ -83,7 +83,7 @@ export default async function (request) {
     return json(200, { checkoutUrl: session.url });
   } catch (error) {
     return json(500, {
-      error: error.message || "Não foi possível iniciar a assinatura.",
+      error: "Não foi possível iniciar a assinatura.",
     });
   }
 }

@@ -29,6 +29,6 @@ export default async function (request) {
     return json(200, { orderId: orderRef.id, total: reservation.totalCents / 100, installments });
   } catch (error) {
     console.error(error);
-    return json(400, { error: error.message || "Não foi possível registrar o pedido." });
+    return json(400, { error: "Não foi possível registrar o pedido." });
   }
 }

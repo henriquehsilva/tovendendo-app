@@ -51,6 +51,6 @@ export default async function (request) {
       mode: stripeMode,
     });
   } catch (error) {
-    return json(500, { error: error.message });
+    return json(500, { error: "Não foi possível consultar a conta de pagamentos." });
   }
 }

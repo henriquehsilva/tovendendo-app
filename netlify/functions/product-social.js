@@ -103,7 +103,7 @@ export default async function (request) {
   } catch (error) {
     console.error("Product social error:", error);
     return json(500, {
-      error: error.message || "Não foi possível concluir esta interação.",
+      error: "Não foi possível concluir esta interação.",
     });
   }
 }

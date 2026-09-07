@@ -296,23 +296,37 @@ const saveLocal = (store, products) => {
   safeStorageSet("tv-store", JSON.stringify(store));
   safeStorageSet("tv-products", JSON.stringify(products));
 };
-const googleAuthError = (error) =>
+const authErrorMessage = (error, action = "entrar") =>
   ({
-    "auth/unauthorized-domain": `Este domínio (${location.hostname}) não está autorizado no Firebase. Adicione-o em Authentication → Settings → Authorized domains.`,
-    "auth/operation-not-allowed":
-      "O login com Google está desativado. Ative Google em Firebase Authentication → Sign-in method.",
-    "auth/configuration-not-found":
-      "O Firebase Authentication ainda não foi configurado para este projeto.",
-    "auth/popup-blocked":
-      "O navegador bloqueou a janela do Google. Libere popups para este site e tente novamente.",
-    "auth/cancelled-popup-request":
-      "Outra tentativa de login já está aberta. Conclua ou feche a janela anterior.",
-    "auth/network-request-failed":
-      "Falha de conexão com o Google. Verifique sua internet e tente novamente.",
-    "auth/account-exists-with-different-credential":
-      "Este e-mail já usa outra forma de acesso. Entre com e-mail e senha primeiro.",
+    "auth/invalid-email": "Informe um e-mail válido.",
+    "auth/missing-password": "Informe sua senha.",
+    "auth/weak-password": "Escolha uma senha com pelo menos 6 caracteres.",
+    "auth/email-already-in-use": "Este e-mail já está cadastrado. Tente entrar.",
+    "auth/user-not-found": "E-mail ou senha incorretos.",
+    "auth/wrong-password": "E-mail ou senha incorretos.",
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+    "auth/invalid-login-credentials": "E-mail ou senha incorretos.",
+    "auth/user-disabled": "Esta conta está temporariamente indisponível.",
+    "auth/too-many-requests": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+    "auth/network-request-failed": "Não foi possível conectar. Verifique sua internet e tente novamente.",
+    "auth/operation-not-allowed": "Este método de acesso está temporariamente indisponível.",
+    "auth/configuration-not-found": "O acesso está temporariamente indisponível. Tente novamente mais tarde.",
+    "auth/unauthorized-domain": "Não foi possível concluir o acesso neste endereço.",
+    "auth/popup-blocked": "O navegador bloqueou a janela de acesso. Libere popups e tente novamente.",
+    "auth/cancelled-popup-request": "Outra tentativa de acesso já está aberta. Conclua ou feche a janela anterior.",
+    "auth/popup-closed-by-user": "A janela de acesso foi fechada. Tente novamente.",
+    "auth/account-exists-with-different-credential": "Este e-mail já usa outra forma de acesso. Entre com e-mail e senha.",
   })[error?.code] ||
-  `Não foi possível entrar com o Google (${error?.code || "erro desconhecido"}).`;
+  `Não foi possível ${action}. Tente novamente.`;
+
+const safeBackendError = (error, fallback = "Não foi possível concluir a operação.") => {
+  if (error?.code?.startsWith?.("auth/")) return authErrorMessage(error);
+  if (error?.code === "permission-denied") return "Você não tem permissão para realizar esta operação.";
+  if (error?.name === "AbortError") return "A operação foi cancelada.";
+  return fallback;
+};
+
+const googleAuthError = (error) => authErrorMessage(error, "entrar com o Google");
 
 function Logo() {
   return (
@@ -524,10 +538,10 @@ function ProModal({ onClose }) {
         body: JSON.stringify({ ...data, customerType: type }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      if (!response.ok) throw new Error("subscription_request_failed");
       location.href = result.checkoutUrl;
     } catch (err) {
-      setError(err.message);
+      setError("Não foi possível iniciar a assinatura. Tente novamente.");
       setLoading(false);
     }
   };
@@ -672,7 +686,7 @@ function Login({ user }) {
       } else safeStorageSet("tv-demo-user", email);
       nav("/admin");
     } catch (err) {
-      setError(err.message);
+      setError(firebaseEnabled ? authErrorMessage(err, register ? "criar sua conta" : "entrar") : "Não foi possível concluir o acesso.");
     }
   };
   const loginGoogle = async () => {
@@ -1105,7 +1119,7 @@ function StorePage() {
       if (firebaseEnabled) {
         const response = await fetch("/.netlify/functions/create-delivery-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, items, customer: normalizeCustomer(customer), installments: selectedInstallments }) });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Não foi possível registrar o pedido.");
+        if (!response.ok) throw new Error("delivery_order_failed");
         orderId = data.orderId;
         confirmedTotal = Number(data.total);
         confirmedInstallments = Number(data.installments) || confirmedInstallments;
@@ -1121,7 +1135,7 @@ function StorePage() {
       setDeliveryOrder({ id: orderId, total: confirmedTotal, installments: confirmedInstallments });
       setCart({});
       setCartOpen(false);
-    } catch (err) { setError(err.message); } finally { setPaying(false); }
+    } catch (err) { setError(safeBackendError(err, "Não foi possível registrar o pedido. Tente novamente.")); } finally { setPaying(false); }
   };
   const checkout = async () => {
     if (!count) return;
@@ -1154,7 +1168,7 @@ function StorePage() {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok)
-          throw new Error(data.error || "Não foi possível criar o pedido Pix.");
+          throw new Error("pix_order_failed");
         confirmedTotal = Number(data.total);
         orderId = data.orderId;
       }
@@ -1172,10 +1186,7 @@ function StorePage() {
       setPixPayment({ payload, qrCode, total: confirmedTotal, orderId });
       setCartOpen(false);
     } catch (err) {
-      setError(
-        err.message ||
-          "Não foi possível gerar o Pix. Confira os dados de pagamento da loja.",
-      );
+      setError(safeBackendError(err, "Não foi possível gerar o Pix. Confira os dados de pagamento da loja."));
     } finally {
       setPaying(false);
     }
@@ -1207,10 +1218,10 @@ function StorePage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(data.error || "Não foi possível abrir o pagamento.");
+        throw new Error("checkout_failed");
       location.href = data.checkoutUrl;
     } catch (error) {
-      setError(error.message);
+      setError(safeBackendError(error, "Não foi possível abrir o pagamento. Tente novamente."));
       setPaying(false);
     }
   };
@@ -1934,7 +1945,7 @@ function ProductCard({ store, product, quantity, onChange }) {
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) throw new Error("social_request_failed");
       setLikesCount(data.likesCount);
     } catch {
       setLiked(false);
@@ -2382,11 +2393,11 @@ function CommentsModal({ store, product, image, onClose }) {
     fetch(`/.netlify/functions/product-social?${params}`)
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) throw new Error("social_request_failed");
         setComments(data.comments || []);
         setStatus("");
       })
-      .catch((error) => setStatus(error.message));
+      .catch((error) => setStatus(safeBackendError(error, "Não foi possível carregar os comentários.")));
   }, [store.id, product.id]);
   const send = async (event) => {
     event.preventDefault();
@@ -2404,12 +2415,12 @@ function CommentsModal({ store, product, image, onClose }) {
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) throw new Error("social_request_failed");
       setComments((current) => [data.comment, ...current]);
       setComment("");
       setStatus("");
     } catch (error) {
-      setStatus(error.message);
+      setStatus(safeBackendError(error, "Não foi possível publicar o comentário."));
     }
   };
   return (
@@ -2518,11 +2529,7 @@ function Admin({ user, onLogout }) {
       })
       .catch((error) => {
         console.error("Falha ao abrir painel:", error);
-        setLoadError(
-          error.code === "permission-denied"
-            ? "O Firestore recusou o acesso. Publique o arquivo firestore.rules deste projeto no mesmo Firebase usado em produção."
-            : `Não foi possível abrir o painel: ${error.message}`,
-        );
+        setLoadError(safeBackendError(error, "Não foi possível abrir o painel. Tente novamente."));
       });
   }, [user]);
   const publicStoreSlug = store?.slug || slugify(store?.brand) || "sua-loja";
@@ -2561,7 +2568,7 @@ function Admin({ user, onLogout }) {
             ),
         ),
       (error) =>
-        setSaved(`Não foi possível carregar as vendas: ${error.message}`),
+        setSaved("Não foi possível carregar as vendas. Tente novamente."),
     );
   }, [store?.id, user]);
   useEffect(() => {
@@ -2604,7 +2611,7 @@ function Admin({ user, onLogout }) {
           },
         );
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) throw new Error("stripe_status_failed");
         setStore((current) => ({
           ...current,
           payment: {
@@ -2631,7 +2638,7 @@ function Admin({ user, onLogout }) {
                 : "Conta conectada. A Stripe ainda está verificando os dados enviados.",
           );
       } catch (error) {
-        setSaved(`Não foi possível confirmar a conta Stripe: ${error.message}`);
+        setSaved("Não foi possível confirmar a conta de pagamentos. Tente novamente.");
       } finally {
         if (stripeReturn) history.replaceState({}, "", location.pathname);
       }
@@ -2733,7 +2740,7 @@ function Admin({ user, onLogout }) {
       setSaved("Relatório gerado e baixado com sucesso ✓");
     } catch (error) {
       console.error("Falha ao gerar relatório:", error);
-      setSaved(`Não foi possível gerar o PDF: ${error.message}`);
+      setSaved("Não foi possível gerar o PDF. Tente novamente.");
     } finally {
       setGeneratingReport(false);
     }
@@ -2746,7 +2753,7 @@ function Admin({ user, onLogout }) {
         const token = await user.getIdToken();
         const response = await fetch("/.netlify/functions/confirm-manual-order", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, orderId: order.id }) });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Não foi possível confirmar o pagamento.");
+        if (!response.ok) throw new Error("payment_confirmation_failed");
       } else {
         const updated = orders.map((item) => item.id === order.id ? { ...item, status: "paid", paidAt: new Date().toISOString() } : item);
         setOrders(updated);
@@ -2754,7 +2761,7 @@ function Admin({ user, onLogout }) {
       }
       setSaved("Pagamento confirmado ✓");
     } catch (error) {
-      setSaved(error.message);
+      setSaved(safeBackendError(error, "Não foi possível confirmar o pagamento. Tente novamente."));
     } finally {
       setSaving(false);
     }
@@ -2769,7 +2776,7 @@ function Admin({ user, onLogout }) {
         const token = await user.getIdToken();
         const response = await fetch("/.netlify/functions/refund-manual-order", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ storeId: store.id, orderId: order.id }) });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Não foi possível estornar o pedido.");
+        if (!response.ok) throw new Error("refund_failed");
       } else {
         const restoredProducts = products.map((product) => {
           const reservation = (order.stockReservations || order.items || []).find((item) => item.productId === product.id);
@@ -2782,7 +2789,7 @@ function Admin({ user, onLogout }) {
         safeStorageSet("tv-orders", JSON.stringify(updatedOrders));
       }
       setSaved(paid ? "Pedido estornado e estoque devolvido ✓ Faça a devolução financeira ao cliente." : "Pedido cancelado e itens devolvidos ao estoque ✓");
-    } catch (error) { setSaved(error.message); } finally { setSaving(false); }
+    } catch (error) { setSaved(safeBackendError(error, "Não foi possível estornar o pedido. Tente novamente.")); } finally { setSaving(false); }
   };
   const refreshStripeSales = async () => {
     setSaving(true);
@@ -2799,14 +2806,14 @@ function Admin({ user, onLogout }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(data.error || "Não foi possível consultar a Stripe.");
+        throw new Error("stripe_status_failed");
       setSaved(
         data.checked
           ? `${data.updated} pagamento(s) consultado(s) na Stripe ✓`
           : "Não há pagamentos Stripe pendentes para consultar.",
       );
     } catch (error) {
-      setSaved(error.message);
+      setSaved(safeBackendError(error, "Não foi possível consultar a conta de pagamentos. Tente novamente."));
     } finally {
       setSaving(false);
     }
@@ -2831,10 +2838,10 @@ function Admin({ user, onLogout }) {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(data.error || "Não foi possível abrir a Stripe.");
+        throw new Error("stripe_onboarding_failed");
       location.href = data.onboardingUrl;
     } catch (error) {
-      setSaved(error.message);
+      setSaved(safeBackendError(error, "Não foi possível abrir a conta de pagamentos. Tente novamente."));
       setSaving(false);
     }
   };
@@ -2982,11 +2989,7 @@ function Admin({ user, onLogout }) {
       return persistedStoreId;
     } catch (error) {
       console.error("Falha ao salvar loja:", error);
-      setSaved(
-        error.code === "permission-denied"
-          ? "Sem permissão para salvar. Saia, entre novamente e confirme se as regras do Firestore foram publicadas."
-          : `Não foi possível salvar: ${error.message}`,
-      );
+      setSaved(safeBackendError(error, "Não foi possível salvar as alterações. Tente novamente."));
       return null;
     } finally {
       setSaving(false);
@@ -4313,7 +4316,7 @@ function ProductImagesUpload({ values, onUpload, onChange }) {
       onChange([...values, ...uploaded].slice(0, 10));
       setStatus("Upload concluído ✓");
     } catch (error) {
-      setStatus(error.message);
+      setStatus(safeBackendError(error, "Não foi possível concluir o upload."));
     } finally {
       event.target.value = "";
     }
@@ -4368,7 +4371,7 @@ function ImageUpload({ label, hint, value, onUpload, onChange, wide }) {
       onChange(url);
       setStatus("Upload concluído ✓");
     } catch (error) {
-      setStatus(error.message);
+      setStatus(safeBackendError(error, "Não foi possível concluir o upload."));
     } finally {
       event.target.value = "";
     }

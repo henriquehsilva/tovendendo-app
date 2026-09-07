@@ -18,6 +18,6 @@ export default async function (request) {
     return json(200, { confirmed: true });
   } catch (error) {
     console.error(error);
-    return json(400, { error: error.message || "Não foi possível confirmar o pagamento." });
+    return json(400, { error: "Não foi possível confirmar o pagamento." });
   }
 }
